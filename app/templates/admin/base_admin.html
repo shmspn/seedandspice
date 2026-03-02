@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Admin — NaturMart{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+<div class="mobile-admin-bar">
+  <button type="button" class="mobile-menu-btn" id="adminMenuOpen" aria-label="Menyuni ochish" aria-expanded="false">☰</button>
+  <div class="mobile-admin-title">NaturMart Admin</div>
+</div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<div class="admin-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="adminSidebar">
+    <div class="sidebar-mobile-head">
+      <span class="sidebar-mobile-title">Menyu</span>
+      <button type="button" class="sidebar-close-btn" id="adminMenuClose" aria-label="Menyuni yopish">✕</button>
+    </div>
+    <div class="sidebar-logo">
+      <span style="font-size:1.3rem">🌿</span>
+      <span class="sidebar-logo-text">Natur<em>Mart</em></span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Asosiy</div>
+        <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint=='admin.dashboard' %}active{% endif %}">
+          📊 Dashboard
+        </a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Katalog</div>
+        <a href="{{ url_for('admin.products') }}" class="nav-link {% if 'product' in request.endpoint %}active{% endif %}">
+          🌿 Mahsulotlar
+        </a>
+        <a href="{{ url_for('admin.categories') }}" class="nav-link {% if 'categor' in request.endpoint %}active{% endif %}">
+          📂 Kategoriyalar
+        </a>
+        <a href="{{ url_for('admin.collections') }}" class="nav-link {% if 'collection' in request.endpoint %}active{% endif %}">
+          🧩 Kolleksiyalar
+        </a>
+        <a href="{{ url_for('admin.banners') }}" class="nav-link {% if 'banner' in request.endpoint %}active{% endif %}">
+          🖼 Bannerlar
+        </a>
+      </div>
+ 
+      <div class="nav-section">
+        <div class="nav-label">Sozlamalar</div>
+        <a href="{{ url_for('admin.contact_settings') }}" class="nav-link {% if request.endpoint=='admin.contact_settings' %}active{% endif %}">
+          📍 Kontakt / Manzil
+        </a>
+        <a href="{{ url_for('admin.change_password') }}" class="nav-link {% if request.endpoint=='admin.change_password' %}active{% endif %}">
+          🔑 Parol
+        </a>
+        <a href="{{ url_for('main.index') }}" class="nav-link" target="_blank">🌐 Saytni ko'rish ↗</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('admin.logout') }}">← Chiqish</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="admin-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="admin-flash-wrap">
+      {% for cat,msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+</div>
+<script>
+(function () {
+  var body = document.body;
+  var openBtn = document.getElementById('adminMenuOpen');
+  var closeBtn = document.getElementById('adminMenuClose');
+  var backdrop = document.getElementById('sidebarBackdrop');
+
+  if (!openBtn || !backdrop) return;
+
+  function openMenu() {
+    body.classList.add('sidebar-open');
+    openBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    body.classList.remove('sidebar-open');
+    openBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  openBtn.addEventListener('click', openMenu);
+  if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+  backdrop.addEventListener('click', closeMenu);
+
+  document.querySelectorAll('.sidebar .nav-link, .sidebar-footer a').forEach(function (el) {
+    el.addEventListener('click', function () {
+      if (window.matchMedia('(max-width: 1100px)').matches) closeMenu();
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 1100) closeMenu();
+  });
+})();
+</script>
+</body>
+</html>

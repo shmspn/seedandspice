@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% block title %}NaturMart — Tabiiy Ziravorlar, Dorivorlar va Urug'lar{% endblock %}
+{% block content %}
+
+{% if banners %}
+<section class="home-banner" id="homeBanner">
+  <div class="home-banner-track" id="homeBannerTrack">
+    {% for b in banners %}
+    {% set link = (url_for('main.catalog', collection=b['collection_slug']) if b['collection_slug'] else (b['button_link'] if b['button_link'] else url_for('main.catalog'))) %}
+    {% set is_external = link.startswith('http://') or link.startswith('https://') %}
+    <a href="{{ link }}"
+       class="home-banner-slide{% if loop.first %} active{% endif %}"
+       {% if is_external %}target="_blank" rel="noopener"{% endif %}>
+      <img src="{{ url_for('static', filename='img/banners/' + b['image_path']) }}" alt="{{ b['title'] }}" class="home-banner-image">
+      <div class="home-banner-overlay"></div>
+      <div class="home-banner-content container">
+        <h2 class="home-banner-title">{{ b['title'] }}</h2>
+        {% if b['subtitle'] %}<p class="home-banner-subtitle">{{ b['subtitle'] }}</p>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if banners|length > 1 %}
+  <button class="home-banner-nav home-banner-prev" type="button" data-banner-action="prev" aria-label="Oldingi banner">‹</button>
+  <button class="home-banner-nav home-banner-next" type="button" data-banner-action="next" aria-label="Keyingi banner">›</button>
+  <div class="home-banner-dots">
+    {% for _ in banners %}
+    <button type="button" class="home-banner-dot{% if loop.first %} active{% endif %}" data-banner-dot="{{ loop.index0 }}" aria-label="Banner {{ loop.index }}"></button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+
+{% if featured %}
+<section class="section">
+  <div class="section-header" style="display:flex; justify-content:center">
+    <div class="sec-tag">Tavsiya qilamiz</div>
+  </div>
+
+  <div class="products-grid">
+    {% for p in featured %}
+    {% set first_variant = p['variants'][0] if p['variants'] else None %}
+    {% set initial_price = first_variant['price'] if first_variant else p['price'] %}
+    {% set initial_old = (first_variant['old_price'] if first_variant and first_variant['old_price'] else p['old_price']) %}
+    {% set initial_key = (p['id'] ~ '') %}
+    <div class="pcard reveal">
+      <a href="{{ url_for('main.product_detail', slug=p['slug']) }}" class="pcard-link">
+        <div class="pcard-img">
+          {% if p.get('primary_image') or p['image'] %}
+          <img src="{{ url_for('static', filename='img/products/'+(p.get('primary_image') or p['image'])) }}" alt="{{ p['name'] }}">
+          {% else %}{{ p['cat_icon'] or '🌿' }}{% endif %}
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-name">{{ p['name'] }}</div>
+        </div>
+      </a>
+
+      <button class="pcard-favorite favorite-btn{% if initial_key in favorite_keys %} active{% endif %}"
+              type="button"
+              onclick="addToFavorites({{ p['id'] }}, null, this)"
+              aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
+        {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
+      </button>
+
+      <div class="pcard-bottom">
+        <div class="pcard-price" id="price-{{ p['id'] }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
+        <div class="pcard-old" id="old-{{ p['id'] }}" {% if not (initial_old and initial_old > initial_price) %}style="display:none;"{% endif %}>
+          {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+        </div>
+        
+        {% if p['variants'] %}
+        <div class="pcard-variants">
+          {% for v in p['variants'] %}
+          <button class="pcard-vbtn{% if loop.first %} active{% endif %}"
+                  data-price="{{ v['price'] }}"
+                  data-pid="{{ p['id'] }}"
+                  data-vid="{{ v['id'] }}"
+                  data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}"
+                  onclick="selectVariant(this)">{{ v['label'] }}</button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- FEATURES BAR -->
+<div class="features-bar">
+  <div class="features-inner">
+    <div class="feat-item"><div class="feat-icon">🚚</div><div class="feat-title">Tez yetkazib berish</div><div class="feat-desc">Shahar bo'ylab 1-2 kun ichida</div></div>
+    <div class="feat-item"><div class="feat-icon">🔬</div><div class="feat-title">Sertifikatlangan</div><div class="feat-desc">Barcha mahsulotlar tekshirilgan</div></div>
+    <div class="feat-item"><div class="feat-icon">🌱</div><div class="feat-title">Organik</div><div class="feat-desc">Kimyosiz o'stirilgan mahsulotlar</div></div>
+    <div class="feat-item"><div class="feat-icon">💬</div><div class="feat-title">Maslahat</div><div class="feat-desc">Mutaxassis maslahatlari bepul</div></div>
+  </div>
+</div>
+
+<!-- NIMA UCHUN BIZ -->
+<section class="why-section">
+  <div class="container">
+    <div class="why-heading">
+      <div class="sec-tag">Nima uchun biz?</div>
+      <h2 class="sec-title">Ishonchli do'kon</h2>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-card-icon">🌍</div>
+        <h3 class="why-card-title">To'g'ridan-to'g'ri manba</h3>
+        <p class="why-card-text">Fermerlar va plantatsiyalardan bevosita, vositachilar, ortiqcha narxlar yo'q</p>
+      </div>
+      <div class="why-card">
+        <div class="why-card-icon">⚖️</div>
+        <h3 class="why-card-title">To'g'ri og'irlik</h3>
+        <p class="why-card-text">Har bir mahsulot aniq tortilgan va sifat nazoratidan o'tgan</p>
+      </div>
+      <div class="why-card">
+        <div class="why-card-icon">❄️</div>
+        <h3 class="why-card-title">Saqlash sharoiti</h3>
+        <p class="why-card-text">Namlik va issiqlik nazorati ostida saqlanadigan omborxona</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+var favoriteKeys = new Set({{ favorite_keys|tojson }});
+
+function currentCardKey(pid, vid){
+  return String(pid);
+}
+
+function setFavoriteBtnState(btn, isActive){
+  if(!btn) return;
+  btn.classList.toggle('active', isActive);
+  btn.textContent = isActive ? '❤' : '♡';
+  btn.setAttribute('aria-label', isActive ? 'Sevimlida' : 'Sevimliga qo\'shish');
+}
+
+function setFavoriteBadges(count){
+  var badge = document.getElementById('favoriteBadge');
+  if(!badge && count > 0){
+    var icon = document.querySelector('.favorite-icon');
+    if(icon){
+      badge = document.createElement('span');
+      badge.id = 'favoriteBadge';
+      badge.className = 'favorite-badge';
+      icon.appendChild(badge);
+    }
+  }
+  if(badge){
+    if(count > 0) badge.textContent = count;
+    else badge.remove();
+  }
+
+  var badgeMobile = document.getElementById('favoriteBadgeMobile');
+  if(!badgeMobile && count > 0){
+    var mobileIcon = document.querySelector('.favorite-mobile-item');
+    if(mobileIcon){
+      badgeMobile = document.createElement('span');
+      badgeMobile.id = 'favoriteBadgeMobile';
+      badgeMobile.className = 'favorite-badge-mobile';
+      mobileIcon.appendChild(badgeMobile);
+    }
+  }
+  if(badgeMobile){
+    if(count > 0) badgeMobile.textContent = count;
+    else badgeMobile.remove();
+  }
+}
+
+function updateCardOldPrice(pid, price, oldPrice){
+  var oldEl = document.getElementById('old-'+pid);
+  var badge = document.getElementById('badge-'+pid);
+  var hasOld = oldPrice && oldPrice > price;
+  if(oldEl){
+    if(hasOld){
+      oldEl.style.display = 'block';
+      oldEl.textContent = Math.round(oldPrice).toLocaleString('uz-UZ',{maximumFractionDigits:0}) + ' so\'m';
+    } else {
+      oldEl.style.display = 'none';
+    }
+  }
+  if(badge) badge.style.display = hasOld ? 'inline-flex' : 'none';
+}
+
+function selectVariant(btn){
+  btn.closest('.pcard-variants').querySelectorAll('.pcard-vbtn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  var price = parseFloat(btn.dataset.price);
+  var oldPrice = parseFloat(btn.dataset.oldPrice);
+  var el = document.getElementById('price-'+btn.dataset.pid);
+  if(el) el.textContent = price.toLocaleString('uz-UZ',{maximumFractionDigits:0})+' so\'m';
+  updateCardOldPrice(btn.dataset.pid, price, oldPrice);
+}
+
+function addToFavorites(pid, vid, btn){
+  if(!vid && btn){
+    var card = btn.closest('.pcard');
+    var active = card ? card.querySelector('.pcard-vbtn.active') : null;
+    if(active && active.dataset.vid) vid = parseInt(active.dataset.vid, 10);
+  }
+  var key = currentCardKey(pid, vid);
+  var isActive = favoriteKeys.has(key);
+  var url = isActive ? '{{ url_for("main.favorites_remove") }}' : '{{ url_for("main.favorites_add") }}';
+  var payload = isActive ? {key: key} : {product_id: pid, variant_id: vid};
+
+  fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(!data.success) return;
+
+    if(isActive){
+      favoriteKeys.delete(key);
+      setFavoriteBtnState(btn, false);
+    } else {
+      favoriteKeys.add(data.key || key);
+      setFavoriteBtnState(btn, true);
+    }
+    setFavoriteBadges(data.favorites_count || 0);
+  });
+}
+
+function setupHomeBanner(){
+  var root = document.getElementById('homeBanner');
+  if(!root) return;
+
+  var slides = Array.from(root.querySelectorAll('.home-banner-slide'));
+  var count = slides.length;
+  if(count <= 1) return;
+
+  var dots = Array.from(root.querySelectorAll('.home-banner-dot'));
+  var idx = 0;
+  var timer = null;
+  var touchStartX = 0;
+  var touchStartY = 0;
+  var swipeMoved = false;
+
+  function sync(){
+    slides.forEach(function(s, i){ s.classList.toggle('active', i === idx); });
+    dots.forEach(function(d, i){ d.classList.toggle('active', i === idx); });
+  }
+
+  function go(next){
+    idx = (next + count) % count;
+    sync();
+  }
+
+  function start(){
+    if(timer) clearInterval(timer);
+    timer = setInterval(function(){ go(idx + 1); }, 5000);
+  }
+  function stop(){
+    if(timer) clearInterval(timer);
+    timer = null;
+  }
+
+  var prev = root.querySelector('[data-banner-action="prev"]');
+  var next = root.querySelector('[data-banner-action="next"]');
+  if(prev) prev.addEventListener('click', function(){ go(idx - 1); start(); });
+  if(next) next.addEventListener('click', function(){ go(idx + 1); start(); });
+  dots.forEach(function(dot){
+    dot.addEventListener('click', function(){
+      go(parseInt(dot.dataset.bannerDot || '0', 10));
+      start();
+    });
+  });
+
+  root.addEventListener('touchstart', function(e){
+    var t = e.touches && e.touches[0];
+    if(!t) return;
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    swipeMoved = false;
+    stop();
+  }, {passive:true});
+
+  root.addEventListener('touchend', function(e){
+    var t = e.changedTouches && e.changedTouches[0];
+    if(!t){
+      start();
+      return;
+    }
+    var dx = t.clientX - touchStartX;
+    var dy = t.clientY - touchStartY;
+    if(Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)){
+      swipeMoved = true;
+      if(dx < 0) go(idx + 1);
+      else go(idx - 1);
+    } else {
+      sync();
+    }
+    start();
+  }, {passive:true});
+  root.addEventListener('touchcancel', start, {passive:true});
+
+  slides.forEach(function(slide){
+    slide.addEventListener('click', function(e){
+      if(swipeMoved){
+        e.preventDefault();
+        swipeMoved = false;
+      }
+    });
+  });
+
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) stop();
+    else start();
+  });
+  window.addEventListener('focus', start);
+
+  go(0);
+  start();
+}
+
+setupHomeBanner();
+var obs = new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+{% endblock %}

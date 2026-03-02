@@ -1,0 +1,989 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Kategoriya — Admin{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 class="page-title">{% if cat %}Kategoriyani tahrirlash{% else %}Yangi kategoriya{% endif %}</h1>
+  <a href="{{ url_for('admin.categories') }}" class="btn btn-outline">← Orqaga</a>
+</div>
+<div class="admin-content">
+  <div class="card" style="max-width:1080px;">
+    <form method="POST" id="categoryForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nomi *</label>
+          <input type="text" name="name" value="{{ cat.name if cat else '' }}" required placeholder="masalan: Pomidor urug'lari">
+        </div>
+        <div class="form-group">
+          <label>Emoji ikon</label>
+          <input type="text" name="icon" value="{{ cat.icon if cat else '🌿' }}" placeholder="🌿">
+        </div>
+        <div class="form-group">
+          <label>Ota tur</label>
+          <button type="button" id="openParentPickerBtn" class="parent-picker-btn">
+            <span id="parentPickerLabel">Ota tur tanlang...</span>
+            <span class="parent-picker-btn-action">Tanlash</span>
+          </button>
+          <select name="parent_id" id="parentCategorySelect" class="parent-select-hidden">
+            <option value="" data-title="Yuqori daraja (katta tur)">— Yuqori daraja (katta tur) —</option>
+            {% for p in parent_types %}
+            <option value="{{ p.id }}" data-title="{{ p.icon }} {{ p.name }}" {% if cat and cat.parent_id==p.id %}selected{% endif %}>
+              {{ p.label }}
+            </option>
+            {% endfor %}
+          </select>
+          <div class="field-help">Tanlash tugmasini bosing, katalogga o'xshash daraxt oynasi ochiladi.</div>
+        </div>
+        <div class="form-group">
+          <label>Tartib raqami</label>
+          <div class="sort-order-row">
+            <input type="number" min="0" step="1" id="sortOrderInput" name="sort_order" value="{{ cat.sort_order if cat else (next_sort_order if next_sort_order is not none else '') }}" placeholder="Masalan: 1">
+            <button type="button" id="sortOrderAutoBtn" class="btn btn-outline btn-sm">Auto</button>
+          </div>
+          <div id="sortOrderHint" class="field-help">Kichikroq raqam avval ko'rinadi.</div>
+          <div id="sortOrderPreview" class="sort-preview">
+            {% if sort_preview %}
+              {% for s in sort_preview %}
+              <span class="sort-chip"><strong>{{ s.sort_order }}</strong> {{ s.name }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="sort-chip empty">Bu bo'limda hali kategoriya yo'q.</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="parent-picker-modal" id="parentPickerModal" aria-hidden="true">
+        <div class="parent-picker-backdrop" data-close-parent-picker></div>
+        <div class="parent-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="parentPickerTitle">
+          <div class="parent-picker-head">
+            <h3 id="parentPickerTitle">Ota tur tanlash</h3>
+            <button type="button" class="parent-picker-close" id="closeParentPickerBtn" aria-label="Yopish">✕</button>
+          </div>
+          <div class="parent-picker-sub">Katalog ko'rinishida kerakli ota turni tanlang.</div>
+          <div class="parent-tree-tools">
+            <input type="text" id="parentTreeSearch" placeholder="Kategoriya qidirish...">
+            <button type="button" class="btn btn-outline btn-sm" id="parentTreeExpandAllBtn">Barchasini ochish</button>
+            <button type="button" class="btn btn-outline btn-sm" id="parentTreeCollapseAllBtn">Barchasini yopish</button>
+          </div>
+          <div class="parent-tree-preview" id="parentTreePreview">
+            <button type="button"
+                    class="parent-tree-row no-children{% if not cat or not cat.parent_id %} active{% endif %}"
+                    data-value=""
+                    data-cat-id=""
+                    data-parent-id=""
+                    style="--tree-depth:0;">
+              <span class="parent-tree-toggle">▾</span>
+              <span class="parent-tree-name">Yuqori daraja (katta tur)</span>
+            </button>
+            {% for p in parent_types %}
+            <button type="button"
+                    class="parent-tree-row{% if cat and cat.parent_id==p.id %} active{% endif %}"
+                    data-cat-id="{{ p.id }}"
+                    data-parent-id="{{ p.parent_id if p.parent_id is not none else '' }}"
+                    style="--tree-depth:{{ p.depth }};"
+                    data-value="{{ p.id }}">
+              <span class="parent-tree-toggle">▾</span>
+              <span class="parent-tree-name">{{ p.icon }} {{ p.name }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Qisqa tavsif</label>
+        <textarea name="description" placeholder="Kategoriya haqida...">{{ cat.description if cat else '' }}</textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:0.6rem;">
+        <div class="category-products-head">
+          <label style="margin:0;">Mahsulotlar (ota turdan tanlanadi)</label>
+          <span id="selectedProductsCount" class="picked-count">0 ta tanlandi</span>
+        </div>
+        <div class="category-products-actions">
+          <input id="parentProductsSearch" type="text" placeholder="Mahsulot qidirish...">
+          <button type="button" class="btn btn-outline btn-sm" id="toggleProductsScopeBtn">Hammasini ko'rsatish</button>
+          <button type="button" class="btn btn-outline btn-sm" id="selectVisibleProductsBtn">Ko'ringanini belgilash</button>
+          <button type="button" class="btn btn-outline btn-sm" id="clearVisibleProductsBtn">Ko'ringanini tozalash</button>
+        </div>
+        <div id="parentProductsWrap" class="category-products-grid">
+          {% if parent_products %}
+            {% for p in parent_products %}
+            <label class="category-product-card" data-search="{{ (p.name ~ ' ' ~ (p.cat_name or ''))|lower }}">
+              <input type="checkbox" name="product_ids" value="{{ p.id }}" {% if p.id in selected_product_ids %}checked{% endif %}>
+              {% if p.image %}
+              <img src="{{ url_for('static', filename='img/products/' + p.image) }}" alt="{{ p.name }}">
+              {% else %}
+              <span class="category-product-fallback">{{ p.cat_icon or '🌿' }}</span>
+              {% endif %}
+              <span class="category-product-main">
+                <strong>{{ p.name }}</strong>
+                {% if p.assigned_categories_text %}
+                <small>{{ p.assigned_categories_text }}</small>
+                {% endif %}
+              </span>
+              <span class="category-product-status {% if p.is_active %}active{% else %}inactive{% endif %}">{% if p.is_active %}Faol{% else %}Nofaol{% endif %}</span>
+            </label>
+            {% endfor %}
+          {% else %}
+            <div id="parentProductsEmpty" class="category-products-empty">Ota tur tanlang, mahsulotlar shu yerda chiqadi.</div>
+          {% endif %}
+        </div>
+        <div class="field-help">Tanlangan mahsulotlar shu kategoriyaga bog'lanadi.</div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem; margin-top:1rem;">
+        <button type="submit" class="btn btn-green">{% if cat %}Saqlash{% else %}Qo'shish{% endif %}</button>
+        <a href="{{ url_for('admin.categories') }}" class="btn btn-outline">Bekor qilish</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.category-products-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:0.6rem;
+  margin-bottom:0.55rem;
+}
+.picked-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:0.2rem 0.55rem;
+  font-size:0.73rem;
+  font-weight:700;
+  background:rgba(91,161,85,0.2);
+  color:var(--a-green);
+}
+.parent-select-hidden{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+  transform:translateX(-9999px);
+}
+.parent-picker-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:0.75rem;
+  border:1.5px solid var(--a-border);
+  border-radius:9px;
+  background:var(--a-input);
+  color:var(--a-text);
+  padding:0.58rem 0.8rem;
+  cursor:pointer;
+  transition:border-color 0.14s, background 0.14s;
+}
+.parent-picker-btn:hover{
+  border-color:rgba(91,161,85,0.45);
+  background:rgba(91,161,85,0.08);
+}
+.parent-picker-btn-action{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--a-border);
+  border-radius:999px;
+  padding:0.16rem 0.52rem;
+  font-size:0.72rem;
+  color:var(--a-muted);
+  white-space:nowrap;
+}
+.parent-picker-modal{
+  position:fixed;
+  inset:0;
+  z-index:420;
+  display:none;
+}
+.parent-picker-modal.is-open{display:block;}
+.parent-picker-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.52);
+}
+.parent-picker-dialog{
+  position:relative;
+  width:min(640px, calc(100vw - 1.2rem));
+  margin:7vh auto 0;
+  border:1px solid var(--a-border);
+  border-radius:14px;
+  background:var(--a-card);
+  padding:0.95rem;
+  box-shadow:0 18px 55px rgba(0,0,0,0.42);
+}
+.parent-picker-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:0.8rem;
+}
+.parent-picker-head h3{
+  font-family:'Fraunces', serif;
+  color:var(--a-white);
+  font-size:1.02rem;
+}
+.parent-picker-close{
+  width:30px;
+  height:30px;
+  border:1px solid var(--a-border);
+  border-radius:8px;
+  background:var(--a-input);
+  color:var(--a-text);
+  cursor:pointer;
+}
+.parent-picker-sub{
+  margin-top:0.35rem;
+  margin-bottom:0.5rem;
+  font-size:0.75rem;
+  color:var(--a-muted);
+}
+.parent-tree-tools{
+  display:flex;
+  align-items:center;
+  gap:0.45rem;
+  margin-bottom:0.5rem;
+  flex-wrap:wrap;
+}
+.parent-tree-tools input{
+  min-width:190px;
+  flex:1;
+  padding:0.5rem 0.72rem;
+  border:1.5px solid var(--a-border);
+  border-radius:8px;
+  background:var(--a-input);
+  color:var(--a-text);
+  font-size:0.8rem;
+  outline:none;
+}
+.parent-tree-tools input:focus{border-color:var(--a-green);}
+.parent-tree-preview{
+  margin-top:0.55rem;
+  border:1px solid var(--a-border);
+  border-radius:10px;
+  background:var(--a-input);
+  max-height:205px;
+  overflow:auto;
+  padding:0.35rem;
+}
+.parent-picker-dialog .parent-tree-preview{
+  margin-top:0;
+  max-height:min(58vh, 430px);
+}
+.parent-tree-row{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:0.35rem;
+  margin-left:calc(var(--tree-depth, 0) * 0.95rem);
+  text-align:left;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--a-text);
+  border-radius:8px;
+  padding:0.34rem 0.5rem;
+  cursor:pointer;
+  transition:background 0.12s,border-color 0.12s,color 0.12s;
+}
+.parent-tree-row:hover{
+  background:rgba(91,161,85,0.1);
+  border-color:rgba(91,161,85,0.28);
+}
+.parent-tree-row.active{
+  background:rgba(91,161,85,0.16);
+  border-color:rgba(91,161,85,0.5);
+  color:#d7f4d2;
+}
+.parent-tree-row.is-hidden{display:none;}
+.parent-tree-row.is-collapsed .parent-tree-toggle{transform:rotate(-90deg);}
+.parent-tree-row.no-children .parent-tree-toggle{
+  visibility:hidden;
+  pointer-events:none;
+}
+.parent-tree-toggle{
+  width:18px;
+  height:18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid transparent;
+  border-radius:4px;
+  color:var(--a-muted);
+  flex:0 0 18px;
+  font-size:0.74rem;
+  cursor:pointer;
+}
+.parent-tree-toggle:hover{
+  border-color:rgba(91,161,85,0.45);
+  color:#8ecb86;
+}
+.parent-tree-name{
+  font-size:0.79rem;
+  line-height:1.25;
+}
+.category-products-actions{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  flex-wrap:wrap;
+  margin-bottom:0.65rem;
+}
+.category-products-actions input{
+  min-width:260px;
+  flex:1;
+  padding:0.52rem 0.78rem;
+  border:1.5px solid var(--a-border);
+  border-radius:8px;
+  background:var(--a-input);
+  color:var(--a-text);
+  font-size:0.82rem;
+  outline:none;
+}
+.category-products-actions input:focus{border-color:var(--a-green);}
+.category-products-actions .scope-all-active{
+  border-color:rgba(91,161,85,0.55);
+  color:var(--a-green);
+  background:rgba(91,161,85,0.12);
+}
+.category-products-grid{
+  border:1px solid var(--a-border);
+  border-radius:12px;
+  padding:0.7rem;
+  background:var(--a-card);
+  max-height:370px;
+  overflow:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(265px,1fr));
+  gap:0.55rem;
+}
+.category-products-empty{
+  font-size:0.82rem;
+  color:var(--a-muted);
+  background:var(--a-input);
+  border:1px dashed var(--a-border);
+  border-radius:10px;
+  padding:0.8rem;
+}
+.category-products-empty.error{color:#ff9b9b;}
+.category-product-card{
+  display:grid;
+  grid-template-columns:auto 44px minmax(0,1fr) auto;
+  align-items:center;
+  gap:0.55rem;
+  border:1.5px solid var(--a-border);
+  background:var(--a-input);
+  border-radius:10px;
+  padding:0.45rem;
+  cursor:pointer;
+  transition:border-color 0.15s, transform 0.12s;
+}
+.category-product-card:hover{
+  border-color:#426e3e;
+  transform:translateY(-1px);
+}
+.category-product-card input{
+  width:16px;
+  height:16px;
+  accent-color:var(--a-green);
+}
+.category-product-card img,
+.category-product-fallback{
+  width:44px;
+  height:44px;
+  border-radius:8px;
+  object-fit:cover;
+  object-position:center;
+  flex-shrink:0;
+}
+.category-product-fallback{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--a-border);
+  background:rgba(255,255,255,0.03);
+}
+.category-product-main{min-width:0;}
+.category-product-main strong{
+  display:block;
+  font-size:0.82rem;
+  color:var(--a-white);
+  line-height:1.25;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.category-product-main small{
+  display:block;
+  margin-top:0.15rem;
+  font-size:0.72rem;
+  color:var(--a-muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.category-product-status{
+  font-size:0.68rem;
+  font-weight:700;
+  border-radius:999px;
+  padding:0.16rem 0.48rem;
+  border:1px solid transparent;
+}
+.category-product-status.active{
+  color:var(--a-green);
+  border-color:rgba(91,161,85,0.45);
+  background:rgba(91,161,85,0.14);
+}
+.category-product-status.inactive{
+  color:var(--a-red);
+  border-color:rgba(194,100,74,0.45);
+  background:rgba(194,100,74,0.14);
+}
+.field-help{
+  font-size:0.75rem;
+  color:var(--a-muted);
+  margin-top:0.42rem;
+}
+.sort-order-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:0.45rem;
+}
+.sort-order-row .btn{white-space:nowrap;}
+.sort-preview{
+  margin-top:0.4rem;
+  display:flex;
+  gap:0.35rem;
+  flex-wrap:wrap;
+}
+.sort-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:0.32rem;
+  border-radius:999px;
+  padding:0.14rem 0.52rem;
+  border:1px solid var(--a-border);
+  background:var(--a-input);
+  color:var(--a-muted);
+  font-size:0.72rem;
+}
+.sort-chip strong{color:var(--a-white);}
+.sort-chip.empty{border-style:dashed;}
+
+@media (max-width:700px){
+  .parent-picker-dialog{
+    width:calc(100vw - 0.9rem);
+    margin:5vh auto 0;
+    padding:0.78rem;
+  }
+  .parent-tree-tools input{
+    min-width:100%;
+    flex-basis:100%;
+  }
+  .parent-tree-tools .btn{
+    width:100%;
+  }
+  .category-products-actions input{
+    min-width:100%;
+    flex-basis:100%;
+  }
+  .category-products-actions .btn{width:100%;}
+  .category-products-grid{grid-template-columns:1fr;}
+  .category-product-card{grid-template-columns:auto 40px minmax(0,1fr);} 
+  .category-product-status{grid-column:2 / span 2; justify-self:end;}
+}
+</style>
+
+<script>
+(function(){
+  var parentSelect = document.getElementById('parentCategorySelect');
+  var openParentPickerBtn = document.getElementById('openParentPickerBtn');
+  var parentPickerModal = document.getElementById('parentPickerModal');
+  var closeParentPickerBtn = document.getElementById('closeParentPickerBtn');
+  var parentPickerLabel = document.getElementById('parentPickerLabel');
+  var parentTree = document.getElementById('parentTreePreview');
+  var parentTreeSearch = document.getElementById('parentTreeSearch');
+  var parentTreeExpandAllBtn = document.getElementById('parentTreeExpandAllBtn');
+  var parentTreeCollapseAllBtn = document.getElementById('parentTreeCollapseAllBtn');
+  var wrap = document.getElementById('parentProductsWrap');
+  var searchInput = document.getElementById('parentProductsSearch');
+  var selectedCountEl = document.getElementById('selectedProductsCount');
+  var toggleProductsScopeBtn = document.getElementById('toggleProductsScopeBtn');
+  var selectVisibleBtn = document.getElementById('selectVisibleProductsBtn');
+  var clearVisibleBtn = document.getElementById('clearVisibleProductsBtn');
+  var sortInput = document.getElementById('sortOrderInput');
+  var sortHintEl = document.getElementById('sortOrderHint');
+  var sortPreviewEl = document.getElementById('sortOrderPreview');
+  var autoSortBtn = document.getElementById('sortOrderAutoBtn');
+  if(!parentSelect || !wrap || !searchInput || !openParentPickerBtn || !parentPickerModal || !toggleProductsScopeBtn || !parentTree) return;
+  var treeRows = Array.from(parentTree.querySelectorAll('.parent-tree-row[data-value]'));
+
+  var selectedIds = new Set({{ selected_product_ids|tojson }});
+  var endpointProducts = '{{ url_for("admin.parent_category_products") }}';
+  var endpointSortHint = '{{ url_for("admin.category_sort_hint") }}';
+  var imageBase = '{{ url_for("static", filename="img/products/") }}';
+  var currentCatId = {{ cat.id if cat else 'null' }};
+  var allItems = [];
+  var searchText = '';
+  var showAllProducts = false;
+  var sortTouched = false;
+  var lastSortSuggestion = null;
+
+  function escapeHtml(v){
+    return String(v || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function updatePickedCount(){
+    if(!selectedCountEl) return;
+    selectedCountEl.textContent = selectedIds.size + ' ta tanlandi';
+  }
+
+  var parentTreeById = new Map();
+  var parentTreeChildren = new Map();
+  var parentTreeQuery = '';
+
+  function parentTreeParentId(row){
+    return (row.getAttribute('data-parent-id') || '').trim();
+  }
+
+  function parentTreeValue(row){
+    return (row.getAttribute('data-value') || '').trim();
+  }
+
+  function setParentTreeExpanded(row, expanded){
+    if(!row || row.classList.contains('no-children')) return;
+    row.classList.toggle('is-collapsed', !expanded);
+  }
+
+  function openParentTreeAncestorsByValue(value){
+    var current = String(value || '');
+    while(current){
+      var row = parentTreeById.get(current);
+      if(!row) break;
+      var parentId = parentTreeParentId(row);
+      if(!parentId) break;
+      var parentRow = parentTreeById.get(parentId);
+      if(!parentRow) break;
+      setParentTreeExpanded(parentRow, true);
+      current = parentId;
+    }
+  }
+
+  function parentTreeHasCollapsedAncestor(row){
+    var parentId = parentTreeParentId(row);
+    while(parentId){
+      var parentRow = parentTreeById.get(parentId);
+      if(!parentRow) return false;
+      if(parentRow.classList.contains('is-collapsed')) return true;
+      parentId = parentTreeParentId(parentRow);
+    }
+    return false;
+  }
+
+  function refreshParentTreeVisibility(){
+    if(parentTreeQuery){
+      var showIds = new Set();
+      treeRows.forEach(function(row){
+        var value = parentTreeValue(row);
+        if(!value) return;
+        var nameEl = row.querySelector('.parent-tree-name');
+        var hay = ((nameEl ? nameEl.textContent : row.textContent) || '').toLowerCase();
+        if(hay.indexOf(parentTreeQuery) === -1) return;
+        showIds.add(value);
+        var cur = value;
+        while(cur){
+          showIds.add(cur);
+          var curRow = parentTreeById.get(cur);
+          if(!curRow) break;
+          var up = parentTreeParentId(curRow);
+          if(!up) break;
+          showIds.add(up);
+          cur = up;
+        }
+      });
+      treeRows.forEach(function(row){
+        var value = parentTreeValue(row);
+        if(!value){
+          row.classList.remove('is-hidden');
+          return;
+        }
+        row.classList.toggle('is-hidden', !showIds.has(value));
+      });
+      return;
+    }
+
+    treeRows.forEach(function(row){
+      var value = parentTreeValue(row);
+      if(!value){
+        row.classList.remove('is-hidden');
+        return;
+      }
+      row.classList.toggle('is-hidden', parentTreeHasCollapsedAncestor(row));
+    });
+  }
+
+  function syncParentTreeSelection(){
+    if(!treeRows.length) return;
+    var current = parentSelect.value || '';
+    treeRows.forEach(function(row){
+      row.classList.toggle('active', parentTreeValue(row) === current);
+    });
+    if(current){
+      openParentTreeAncestorsByValue(current);
+    }
+    refreshParentTreeVisibility();
+  }
+
+  function syncParentLabel(){
+    if(!parentPickerLabel) return;
+    var selected = parentSelect.options[parentSelect.selectedIndex];
+    var text = selected ? (selected.getAttribute('data-title') || selected.textContent || '') : '';
+    text = text.replace(/\s+/g, ' ').trim();
+    if(!text){
+      text = '— Yuqori daraja (katta tur) —';
+    }
+    parentPickerLabel.textContent = text;
+  }
+
+  function openParentPicker(){
+    parentTreeQuery = '';
+    if(parentTreeSearch){
+      parentTreeSearch.value = '';
+    }
+    parentPickerModal.classList.add('is-open');
+    parentPickerModal.setAttribute('aria-hidden', 'false');
+    refreshParentTreeVisibility();
+    if(parentTreeSearch){
+      parentTreeSearch.focus();
+      parentTreeSearch.select();
+    }
+  }
+
+  function closeParentPicker(){
+    parentPickerModal.classList.remove('is-open');
+    parentPickerModal.setAttribute('aria-hidden', 'true');
+  }
+
+  function filteredItems(){
+    if(!searchText) return allItems.slice();
+    return allItems.filter(function(item){
+      var hay = (item.name || '') + ' ' + (item.cat_name || '');
+      return hay.toLowerCase().indexOf(searchText) !== -1;
+    });
+  }
+
+  function updateScopeButton(){
+    if(!toggleProductsScopeBtn) return;
+    if(showAllProducts){
+      toggleProductsScopeBtn.textContent = "Faqat bo'shlarini ko'rsatish";
+      toggleProductsScopeBtn.classList.add('scope-all-active');
+      return;
+    }
+    toggleProductsScopeBtn.textContent = "Hammasini ko'rsatish";
+    toggleProductsScopeBtn.classList.remove('scope-all-active');
+  }
+
+  function renderEmpty(message, isError){
+    var cls = isError ? 'category-products-empty error' : 'category-products-empty';
+    wrap.innerHTML = '<div class="' + cls + '">' + escapeHtml(message) + '</div>';
+  }
+
+  function renderSortPreview(siblings){
+    if(!sortPreviewEl) return;
+    if(!siblings || !siblings.length){
+      sortPreviewEl.innerHTML = '<span class="sort-chip empty">Bu bo\'limda hali kategoriya yo\'q.</span>';
+      return;
+    }
+    var html = siblings.map(function(item){
+      return '<span class="sort-chip"><strong>' + escapeHtml(item.sort_order) + '</strong> ' + escapeHtml(item.name) + '</span>';
+    }).join('');
+    sortPreviewEl.innerHTML = html;
+  }
+
+  function renderItems(items){
+    allItems = items || [];
+    if(!allItems.length){
+      if(showAllProducts){
+        renderEmpty('Mahsulot topilmadi.', false);
+      } else {
+        renderEmpty("Bo'sh mahsulot topilmadi. Kerak bo'lsa \"Hammasini ko'rsatish\"ni bosing.", false);
+      }
+      updatePickedCount();
+      return;
+    }
+    var list = filteredItems();
+    if(!list.length){
+      renderEmpty('Qidiruv bo\'yicha mos mahsulot topilmadi.', false);
+      updatePickedCount();
+      return;
+    }
+
+    var html = list.map(function(p){
+      var checked = selectedIds.has(p.id) ? ' checked' : '';
+      var statusCls = p.is_active ? 'active' : 'inactive';
+      var statusText = p.is_active ? 'Faol' : 'Nofaol';
+      var meta = p.assigned_categories_text ? '<small>' + escapeHtml(p.assigned_categories_text) + '</small>' : '';
+      var media = p.image
+        ? '<img src="' + imageBase + encodeURIComponent(p.image) + '" alt="' + escapeHtml(p.name) + '">'
+        : '<span class="category-product-fallback">' + escapeHtml(p.cat_icon || '🌿') + '</span>';
+      return '<label class="category-product-card" data-id="' + p.id + '">'
+        + '<input type="checkbox" name="product_ids" value="' + p.id + '"' + checked + '>'
+        + media
+        + '<span class="category-product-main"><strong>' + escapeHtml(p.name) + '</strong>' + meta + '</span>'
+        + '<span class="category-product-status ' + statusCls + '">' + statusText + '</span>'
+        + '</label>';
+    }).join('');
+    wrap.innerHTML = html;
+    updatePickedCount();
+  }
+
+  function setActionState(enabled){
+    searchInput.disabled = !enabled;
+    toggleProductsScopeBtn.disabled = !enabled;
+    selectVisibleBtn.disabled = !enabled;
+    clearVisibleBtn.disabled = !enabled;
+  }
+
+  function loadProducts(parentId){
+    if(!parentId){
+      allItems = [];
+      setActionState(false);
+      renderEmpty('Ota tur tanlang, mahsulotlar shu yerda chiqadi.', false);
+      updatePickedCount();
+      updateScopeButton();
+      return;
+    }
+    setActionState(true);
+    var query = '?parent_id=' + encodeURIComponent(parentId)
+      + '&show=' + (showAllProducts ? 'all' : 'available');
+    if(currentCatId){
+      query += '&current_category_id=' + encodeURIComponent(currentCatId);
+    }
+    fetch(endpointProducts + query)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data || !data.success){
+          allItems = [];
+          renderEmpty('Mahsulotlarni yuklashda xatolik.', true);
+          return;
+        }
+        renderItems(data.items || []);
+        updateScopeButton();
+      })
+      .catch(function(){
+        allItems = [];
+        renderEmpty('Mahsulotlarni yuklashda xatolik.', true);
+      });
+  }
+
+  function loadSortHint(parentId){
+    var qs = '?parent_id=' + encodeURIComponent(parentId || '');
+    if(currentCatId){
+      qs += '&exclude_id=' + encodeURIComponent(currentCatId);
+    }
+    fetch(endpointSortHint + qs)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data || !data.success) return;
+        var siblings = data.siblings || [];
+        var nextSort = Number(data.next_sort || 1);
+        lastSortSuggestion = nextSort;
+        renderSortPreview(siblings);
+        if(sortHintEl){
+          sortHintEl.textContent = 'Kichikroq raqam avval ko\'rinadi. Tavsiya: ' + nextSort + '. Hozir shu bo\'limda ' + siblings.length + ' ta kategoriya bor.';
+        }
+        if(!sortTouched && sortInput && !currentCatId){
+          sortInput.value = String(nextSort);
+        }
+      })
+      .catch(function(){
+        if(sortHintEl){
+          sortHintEl.textContent = 'Tartib tavsiyasini olishda xatolik bo\'ldi.';
+        }
+      });
+  }
+
+  wrap.addEventListener('change', function(e){
+    var target = e.target;
+    if(!target || target.name !== 'product_ids') return;
+    var id = parseInt(target.value, 10);
+    if(!id) return;
+    if(target.checked) selectedIds.add(id);
+    else selectedIds.delete(id);
+    updatePickedCount();
+  });
+
+  searchInput.addEventListener('input', function(){
+    searchText = (searchInput.value || '').trim().toLowerCase();
+    renderItems(allItems);
+  });
+
+  selectVisibleBtn.addEventListener('click', function(){
+    filteredItems().forEach(function(item){ selectedIds.add(item.id); });
+    renderItems(allItems);
+  });
+
+  clearVisibleBtn.addEventListener('click', function(){
+    filteredItems().forEach(function(item){ selectedIds.delete(item.id); });
+    renderItems(allItems);
+  });
+
+  toggleProductsScopeBtn.addEventListener('click', function(){
+    showAllProducts = !showAllProducts;
+    loadProducts(parentSelect.value || '');
+  });
+
+  parentSelect.addEventListener('change', function(){
+    selectedIds.clear();
+    searchText = '';
+    searchInput.value = '';
+    if(!currentCatId){
+      sortTouched = false;
+    }
+    loadProducts(this.value || '');
+    loadSortHint(this.value || '');
+    syncParentTreeSelection();
+    syncParentLabel();
+  });
+
+  treeRows.forEach(function(row){
+    var value = parentTreeValue(row);
+    var id = (row.getAttribute('data-cat-id') || '').trim();
+    var parentId = parentTreeParentId(row);
+
+    if(id){
+      parentTreeById.set(id, row);
+      if(!parentTreeChildren.has(parentId)){
+        parentTreeChildren.set(parentId, []);
+      }
+      parentTreeChildren.get(parentId).push(row);
+    }
+
+    row.addEventListener('click', function(e){
+      var toggleEl = e.target && e.target.closest ? e.target.closest('.parent-tree-toggle') : null;
+      if(toggleEl){
+        e.preventDefault();
+        e.stopPropagation();
+        if(row.classList.contains('no-children')) return;
+        setParentTreeExpanded(row, row.classList.contains('is-collapsed'));
+        refreshParentTreeVisibility();
+        return;
+      }
+
+      if(parentSelect.value === value){
+        syncParentTreeSelection();
+        return;
+      }
+      parentSelect.value = value;
+      parentSelect.dispatchEvent(new Event('change'));
+      closeParentPicker();
+    });
+  });
+
+  treeRows.forEach(function(row){
+    var id = (row.getAttribute('data-cat-id') || '').trim();
+    var hasChildren = !!(id && parentTreeChildren.get(id) && parentTreeChildren.get(id).length);
+    if(!hasChildren){
+      row.classList.add('no-children');
+      return;
+    }
+    row.classList.remove('no-children');
+    row.classList.remove('is-collapsed');
+  });
+
+  if(parentTreeExpandAllBtn){
+    parentTreeExpandAllBtn.addEventListener('click', function(){
+      treeRows.forEach(function(row){
+        if(!row.classList.contains('no-children')){
+          row.classList.remove('is-collapsed');
+        }
+      });
+      refreshParentTreeVisibility();
+    });
+  }
+
+  if(parentTreeCollapseAllBtn){
+    parentTreeCollapseAllBtn.addEventListener('click', function(){
+      treeRows.forEach(function(row){
+        if(!row.classList.contains('no-children')){
+          row.classList.add('is-collapsed');
+        }
+      });
+      openParentTreeAncestorsByValue(parentSelect.value || '');
+      refreshParentTreeVisibility();
+    });
+  }
+
+  if(parentTreeSearch){
+    parentTreeSearch.addEventListener('input', function(){
+      parentTreeQuery = (parentTreeSearch.value || '').trim().toLowerCase();
+      if(parentTreeQuery){
+        treeRows.forEach(function(row){
+          if(!row.classList.contains('no-children')){
+            row.classList.remove('is-collapsed');
+          }
+        });
+      }
+      refreshParentTreeVisibility();
+    });
+  }
+
+  openParentPickerBtn.addEventListener('click', function(){
+    openParentPicker();
+  });
+
+  if(closeParentPickerBtn){
+    closeParentPickerBtn.addEventListener('click', function(){
+      closeParentPicker();
+    });
+  }
+
+  parentPickerModal.addEventListener('click', function(e){
+    var target = e.target;
+    if(target && target.hasAttribute('data-close-parent-picker')){
+      closeParentPicker();
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && parentPickerModal.classList.contains('is-open')){
+      closeParentPicker();
+    }
+  });
+
+  if(sortInput){
+    sortInput.addEventListener('input', function(){
+      sortTouched = true;
+    });
+  }
+
+  if(autoSortBtn){
+    autoSortBtn.addEventListener('click', function(){
+      if(!sortInput) return;
+      if(lastSortSuggestion !== null){
+        sortInput.value = String(lastSortSuggestion);
+      }
+      sortTouched = true;
+      sortInput.focus();
+    });
+  }
+
+  updatePickedCount();
+  updateScopeButton();
+  syncParentTreeSelection();
+  syncParentLabel();
+  loadProducts(parentSelect.value || '');
+  loadSortHint(parentSelect.value || '');
+})();
+</script>
+{% endblock %}

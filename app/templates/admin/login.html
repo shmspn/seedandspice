@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kirish — NaturMart Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;1,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem;">🌿</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.5rem;color:var(--a-white);">Natur<em>Mart</em></div>
+      <div style="font-size:0.8rem;color:var(--a-muted);margin-top:0.3rem;">Admin Panel</div>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat,msg in messages %}
+    <div class="flash flash-{{ cat }}" style="margin-bottom:1rem;">{{ msg }}</div>
+    {% endfor %}{% endif %}{% endwith %}
+    <form method="POST">
+      <div class="form-group"><label>Login</label><input type="text" name="username" required autofocus placeholder="admin"></div>
+      <div class="form-group"><label>Parol</label><input type="password" name="password" required placeholder="••••••••"></div>
+      <button type="submit" class="btn btn-green" style="width:100%;padding:0.75rem;">Kirish</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

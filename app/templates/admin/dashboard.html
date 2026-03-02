@@ -1,0 +1,147 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Dashboard — NaturMart Admin{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 class="page-title">Dashboard</h1>
+  <div class="dash-top-actions">
+    <a href="{{ url_for('admin.add_product') }}" class="btn btn-green">+ Mahsulot</a>
+    <a href="{{ url_for('admin.add_collection') }}" class="btn btn-outline">+ Kolleksiya</a>
+    <a href="{{ url_for('admin.add_banner') }}" class="btn btn-outline">+ Banner</a>
+  </div>
+</div>
+<div class="admin-content">
+
+  <div class="stat-grid dashboard-stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Jami mahsulot</div>
+      <div class="stat-val">{{ stats.products }}</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Faol mahsulot</div>
+      <div class="stat-val">{{ stats.active }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Kategoriya</div>
+      <div class="stat-val">{{ stats.categories }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Kolleksiya</div>
+      <div class="stat-val">{{ stats.collections }}</div>
+      <div class="stat-sub">{{ stats.active_collections }} faol</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Banner</div>
+      <div class="stat-val">{{ stats.banners }}</div>
+      <div class="stat-sub">{{ stats.active_banners }} faol</div>
+    </div>
+  </div>
+
+  <div class="dash-columns">
+    <div class="card">
+      <div class="dash-head">
+        <h3>So'nggi kolleksiyalar</h3>
+        <a href="{{ url_for('admin.collections') }}" class="btn btn-outline btn-sm">Barchasi</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nomi</th>
+            <th>Link</th>
+            <th>Mahsulot</th>
+            <th>Status</th>
+            <th>Amal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent_collections %}
+          <tr>
+            <td>
+              <div style="font-weight:600;">{{ c.name }}</div>
+            </td>
+            <td style="font-size:0.8rem;color:var(--a-muted);">/katalog?collection={{ c.slug }}</td>
+            <td>{{ c.prod_count }} ta</td>
+            <td>
+              {% if c.is_active %}
+              <span class="status status-qabul">Faol</span>
+              {% else %}
+              <span class="status status-bekor">Nofaol</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('admin.edit_collection', cid=c.id) }}" class="btn btn-outline btn-sm">Tahrirlash</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--a-muted);">Kolleksiyalar yo'q</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="dash-side">
+      <div class="card">
+        <div class="dash-head">
+          <h3>So'nggi bannerlar</h3>
+          <a href="{{ url_for('admin.banners') }}" class="btn btn-outline btn-sm">Barchasi</a>
+        </div>
+        <div class="dash-list">
+          {% for b in recent_banners %}
+          <div class="dash-item">
+            <div class="dash-item-media">
+              {% if b.image_path %}
+              <img src="{{ url_for('static', filename='img/banners/' + b.image_path) }}" class="table-thumb" alt="{{ b.title }}">
+              {% else %}
+              <span>🖼</span>
+              {% endif %}
+            </div>
+            <div class="dash-item-main">
+              <div class="dash-item-title">{{ b.title }}</div>
+              <div class="dash-item-sub">
+                {% if b.collection_slug %}
+                /katalog?collection={{ b.collection_slug }}
+                {% elif b.button_link %}
+                {{ b.button_link }}
+                {% else %}
+                /katalog
+                {% endif %}
+              </div>
+            </div>
+            <div class="dash-item-side">
+              {% if b.is_active %}
+              <span class="status status-qabul">Faol</span>
+              {% else %}
+              <span class="status status-bekor">Nofaol</span>
+              {% endif %}
+              <a href="{{ url_for('admin.edit_banner', bid=b.id) }}" class="btn btn-outline btn-sm">Tahrirlash</a>
+            </div>
+          </div>
+          {% else %}
+          <p style="color:var(--a-muted);font-size:0.85rem;">Bannerlar yo'q</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="dash-head">
+          <h3>Top mahsulotlar</h3>
+          <a href="{{ url_for('admin.products') }}" class="btn btn-outline btn-sm">Mahsulotlar</a>
+        </div>
+        <div class="dash-list">
+          {% for p in popular %}
+          <div class="dash-item simple">
+            <div class="dash-item-main">
+              <div class="dash-item-title">{{ p.name }}</div>
+            </div>
+            <div class="dash-item-side">
+              <span class="dash-badge">{{ p.cnt }} ta</span>
+            </div>
+          </div>
+          {% else %}
+          <p style="color:var(--a-muted);font-size:0.85rem;">Ma'lumot yo'q</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

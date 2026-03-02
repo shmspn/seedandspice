@@ -1,0 +1,55 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Kontakt Sozlamalari — Admin{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 class="page-title">Kontakt va Manzil</h1>
+</div>
+
+<div class="admin-content">
+  <div class="card" style="max-width:760px;">
+    <form method="POST">
+      <div class="form-group">
+        <label>Telefon (tel: uchun, bo'sh joysiz)</label>
+        <input type="text" name="contact_phone_raw" value="{{ settings['contact_phone_raw'] }}" placeholder="+998901234567" required>
+      </div>
+
+      <div class="form-group">
+        <label>Telefon (ko'rinadigan matn, ixtiyoriy)</label>
+        <input type="text" name="contact_phone_display" value="{{ settings['contact_phone_display'] }}" placeholder="+998 90 123 45 67">
+      </div>
+
+      <div class="form-group">
+        <label>Lokatsiya URL (ixtiyoriy)</label>
+        <input type="url" name="contact_location_url" value="{{ settings['contact_location_url'] }}" placeholder="https://maps.google.com/?q=Toshkent">
+      </div>
+
+      <div class="form-group">
+        <label>Lokatsiya matni (ixtiyoriy)</label>
+        <input type="text" name="contact_location_label" value="{{ settings['contact_location_label'] }}" placeholder="Toshkent, O'zbekiston">
+      </div>
+
+      <div class="form-group">
+        <label>Telegram URL (ixtiyoriy)</label>
+        <input type="url" name="contact_telegram_url" value="{{ settings['contact_telegram_url'] }}" placeholder="https://t.me/naturmart">
+      </div>
+
+      <div class="form-group">
+        <label>Telegram matni (ixtiyoriy)</label>
+        <input type="text" name="contact_telegram_label" value="{{ settings['contact_telegram_label'] }}" placeholder="Telegram">
+      </div>
+
+      <div class="form-group">
+        <label>Instagram URL (ixtiyoriy)</label>
+        <input type="url" name="contact_instagram_url" value="{{ settings['contact_instagram_url'] }}" placeholder="https://instagram.com/naturmart">
+      </div>
+
+      <div class="form-group">
+        <label>Instagram matni (ixtiyoriy)</label>
+        <input type="text" name="contact_instagram_label" value="{{ settings['contact_instagram_label'] }}" placeholder="Instagram">
+      </div>
+
+      <button type="submit" class="btn btn-green">Saqlash</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

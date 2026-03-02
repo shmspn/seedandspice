@@ -1,0 +1,70 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Bannerlar — Admin{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 class="page-title">Bannerlar</h1>
+  <a href="{{ url_for('admin.add_banner') }}" class="btn btn-green">+ Qo'shish</a>
+</div>
+<div class="admin-content">
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Rasm</th>
+          <th>Sarlavha</th>
+          <th>Yo'nalish</th>
+          <th>Tartib</th>
+          <th>Status</th>
+          <th>Amallar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in banners %}
+        <tr>
+          <td>
+            {% if b.image_path %}
+            <img src="{{ url_for('static', filename='img/banners/' + b.image_path) }}" class="table-thumb" alt="{{ b.title }}">
+            {% else %}
+            <span style="font-size:1.3rem;">🖼</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight:600;">{{ b.title }}</div>
+            <!-- {% if b.subtitle %}<div style="font-size:0.8rem;color:var(--a-muted);">{{ b.subtitle }}</div>{% endif %} -->
+          </td>
+          <td style="font-size:0.82rem;color:var(--a-muted); min-width:170px">
+            {% if b.collection_slug %}
+              <div style="font-weight:600;color:var(--a-white);">{{ b.collection_name }}</div>
+              <div style="margin-top:0.2rem;word-break:break-all;">/katalog?collection={{ b.collection_slug }}</div>
+              <!-- <div style="margin-top:0.15rem;font-size:0.75rem;">{{ b.collection_product_count }} ta mahsulot</div> -->
+            {% elif b.button_link %}
+              <div style="word-break:break-all;">{{ b.button_link }}</div>
+            {% else %}
+              <span>—</span>
+            {% endif %}
+          </td>
+          <td>{{ b.sort_order }}</td>
+          <td>
+            {% if b.is_active %}
+            <span class="status status-qabul">Faol</span>
+            {% else %}
+            <span class="status status-bekor">Nofaol</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:10px;">
+              <a href="{{ url_for('admin.edit_banner', bid=b.id) }}" class="btn btn-outline btn-sm">Tahrirlash</a>
+              <form method="POST" action="{{ url_for('admin.delete_banner', bid=b.id) }}" onsubmit="return confirm('Banner o\\'chirilsinmi?')">
+                <button type="submit" class="btn btn-red btn-sm">O'chirish</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:2.2rem;color:var(--a-muted);">Bannerlar yo'q</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
