@@ -94,12 +94,20 @@
       
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;">
         {% if active_category %}
-        <div>
-          <a href="{{ url_for('main.catalog', tur=active_type['slug'] if active_type else None, collection=collection, q=search, sort=sort) }}" class="catalog-back-link">← {{ active_category['name'] }}</a>
+        <div class="catalog-back-wrap mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
+          <span class="catalog-back-text">{{ active_category['name'] }}</span>
+          <a href="{{ url_for('main.catalog', tur=active_type['slug'] if active_type else None, collection=collection, q=search, sort=sort) }}" class="catalog-back-link">
+            <span class="catalog-back-link-arrow" aria-hidden="true">←</span>
+            <span>{{ active_category['name'] }}</span>
+          </a>
         </div>
-        {% elif active_type and focus_all %}
-        <div>
-          <a href="{{ url_for('main.catalog', tur=active_type['slug'], collection=collection, q=search, sort=sort) }}" class="catalog-back-link">← Barcha {{ active_type['name']|lower }}</a>
+        {% elif active_type and not active_category %}
+        <div class="catalog-back-wrap mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
+          <span class="catalog-back-text">Barcha {{ active_type['name']|lower }}</span>
+          <a href="{{ url_for('main.catalog', tur=active_type['slug'], collection=collection, q=search, sort=sort) }}" class="catalog-back-link">
+            <span class="catalog-back-link-arrow" aria-hidden="true">←</span>
+            <span>Barcha {{ active_type['name']|lower }}</span>
+          </a>
         </div>
         {% endif %}
         
@@ -114,7 +122,7 @@
         <div></div>
         {% endif %}
         
-        <form method="GET">
+        <form method="GET" class="catalog-sort-form mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
           {% if tur %}<input type="hidden" name="tur" value="{{ tur }}">{% endif %}
           {% if active_category %}<input type="hidden" name="kategoriya" value="{{ active_category['slug'] }}">{% endif %}
           {% if collection %}<input type="hidden" name="collection" value="{{ collection }}">{% endif %}
