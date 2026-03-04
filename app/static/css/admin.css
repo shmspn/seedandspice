@@ -919,6 +919,12 @@ tr:hover td {
   }
 }
 
+@media (max-width: 900px) {
+  .cat-group.tree {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 700px) {
   .dashboard-stat-grid {
     grid-template-columns: repeat(2, 1fr);

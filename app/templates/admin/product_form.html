@@ -38,10 +38,9 @@
                      data-parent-id="{{ c.parent_id if c.parent_id is not none else '' }}"
                      data-depth="{{ c.depth }}"
                      style="--depth: {{ c.depth }};">
-                <input type="checkbox" name="category_ids" value="{{ c.id }}" {% if product_category_ids is defined
-                  and c.id in product_category_ids %}checked{% endif %}>
+                <input type="checkbox" name="category_ids" value="{{ c.id }}" style="width:auto;"
+                       {% if product_category_ids is defined and c.id in product_category_ids %}checked{% endif %}>
                 <span class="cat-check-text">
-                  <button type="button" class="cat-tree-toggle" aria-label="Ochish/yopish">▾</button>
                   {% if c.depth > 0 %}<span class="cat-tree-prefix">↳</span>{% endif %}
                   {{ c.icon }} {{ c.name }}
                 </span>
@@ -187,8 +186,7 @@
 
   .cat-group.tree {
     display: flex;
-    flex-direction: column;
-    gap: 0.28rem;
+    gap: 0.5rem;
   }
 
   .cat-tree-actions {
@@ -206,7 +204,6 @@
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    width: 100%;
     padding: 0.36rem 0.55rem;
     border: 1.5px solid var(--a-border);
     border-radius: 8px;
@@ -227,15 +224,6 @@
 
   .cat-tree-item.is-hidden {
     display: none;
-  }
-
-  .cat-check-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.22rem;
-    min-width: 0;
-    line-height: 1.25;
-    word-break: break-word;
   }
 
   .cat-tree-toggle {
@@ -501,6 +489,15 @@
       childrenByParent.get(parentId).push(item);
     });
 
+    var hasNested = items.some(function (item) {
+      var id = item.getAttribute('data-cat-id') || '';
+      return (childrenByParent.get(id) || []).length > 0;
+    });
+    if (!hasNested) {
+      var treeActions = document.querySelector('.cat-tree-actions');
+      if (treeActions) treeActions.style.display = 'none';
+    }
+
     function updateCheckBorder(cb) {
       var row = cb.closest('.cat-check-item');
       if (!row) return;
@@ -547,7 +544,8 @@
       var hasChildren = children.length > 0;
       item.classList.toggle('no-children', !hasChildren);
       if (hasChildren) {
-        setExpandedState(item, true);
+        // Default holatda faqat yuqori darajadagilar ko'rinsin.
+        setExpandedState(item, false);
       }
 
       var cb = item.querySelector('input[type="checkbox"]');

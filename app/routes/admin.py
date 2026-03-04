@@ -913,7 +913,7 @@ def products():
 @login_required
 def add_product():
     db = get_db()
-    cats = _parent_category_nodes(db)
+    cats = [c for c in _parent_category_nodes(db) if c.get('depth') == 0]
     if request.method == 'POST':
         name = request.form.get('name','').strip()
         if not name:
@@ -977,7 +977,7 @@ def edit_product(pid):
     db = get_db()
     product = db.execute('SELECT * FROM product WHERE id=?',(pid,)).fetchone()
     if not product: abort(404)
-    cats = _parent_category_nodes(db)
+    cats = [c for c in _parent_category_nodes(db) if c.get('depth') == 0]
     variants = db.execute('SELECT * FROM product_variants WHERE product_id=? ORDER BY id',(pid,)).fetchall()
     images = db.execute('SELECT * FROM product_images WHERE product_id=? ORDER BY is_primary DESC, order_index',(pid,)).fetchall()
     existing_cat_ids = [r[0] for r in db.execute('SELECT category_id FROM product_categories WHERE product_id=?',(pid,)).fetchall()]
