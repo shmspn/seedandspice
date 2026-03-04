@@ -15,7 +15,7 @@
         </div>
         <div class="form-group">
           <label>Emoji ikon</label>
-          <input type="text" name="icon" value="{{ cat.icon if cat else '🌿' }}" placeholder="🌿">
+          <input type="text" name="icon" value="{{ cat.icon if cat else '' }}" placeholder="🌿">
         </div>
         <div class="form-group">
           <label>Ota tur</label>
@@ -31,7 +31,6 @@
             </option>
             {% endfor %}
           </select>
-          <div class="field-help">Tanlash tugmasini bosing, katalogga o'xshash daraxt oynasi ochiladi.</div>
         </div>
         <div class="form-group">
           <label>Tartib raqami</label>
@@ -39,7 +38,6 @@
             <input type="number" min="0" step="1" id="sortOrderInput" name="sort_order" value="{{ cat.sort_order if cat else (next_sort_order if next_sort_order is not none else '') }}" placeholder="Masalan: 1">
             <button type="button" id="sortOrderAutoBtn" class="btn btn-outline btn-sm">Auto</button>
           </div>
-          <div id="sortOrderHint" class="field-help">Kichikroq raqam avval ko'rinadi.</div>
           <div id="sortOrderPreview" class="sort-preview">
             {% if sort_preview %}
               {% for s in sort_preview %}
@@ -103,8 +101,7 @@
         <div class="category-products-actions">
           <input id="parentProductsSearch" type="text" placeholder="Mahsulot qidirish...">
           <button type="button" class="btn btn-outline btn-sm" id="toggleProductsScopeBtn">Hammasini ko'rsatish</button>
-          <button type="button" class="btn btn-outline btn-sm" id="selectVisibleProductsBtn">Ko'ringanini belgilash</button>
-          <button type="button" class="btn btn-outline btn-sm" id="clearVisibleProductsBtn">Ko'ringanini tozalash</button>
+          <button type="button" class="btn btn-outline btn-sm" id="toggleVisibleProductsBtn">Ko'ringanini belgilash</button>
         </div>
         <div id="parentProductsWrap" class="category-products-grid">
           {% if parent_products %}
@@ -129,7 +126,6 @@
             <div id="parentProductsEmpty" class="category-products-empty">Ota tur tanlang, mahsulotlar shu yerda chiqadi.</div>
           {% endif %}
         </div>
-        <div class="field-help">Tanlangan mahsulotlar shu kategoriyaga bog'lanadi.</div>
       </div>
 
       <div style="display:flex;gap:0.75rem; margin-top:1rem;">
@@ -444,11 +440,7 @@
   border-color:rgba(194,100,74,0.45);
   background:rgba(194,100,74,0.14);
 }
-.field-help{
-  font-size:0.75rem;
-  color:var(--a-muted);
-  margin-top:0.42rem;
-}
+
 .sort-order-row{
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
@@ -514,13 +506,11 @@
   var searchInput = document.getElementById('parentProductsSearch');
   var selectedCountEl = document.getElementById('selectedProductsCount');
   var toggleProductsScopeBtn = document.getElementById('toggleProductsScopeBtn');
-  var selectVisibleBtn = document.getElementById('selectVisibleProductsBtn');
-  var clearVisibleBtn = document.getElementById('clearVisibleProductsBtn');
+  var toggleVisibleBtn = document.getElementById('toggleVisibleProductsBtn');
   var sortInput = document.getElementById('sortOrderInput');
-  var sortHintEl = document.getElementById('sortOrderHint');
   var sortPreviewEl = document.getElementById('sortOrderPreview');
   var autoSortBtn = document.getElementById('sortOrderAutoBtn');
-  if(!parentSelect || !wrap || !searchInput || !openParentPickerBtn || !parentPickerModal || !toggleProductsScopeBtn || !parentTree) return;
+  if(!parentSelect || !wrap || !searchInput || !openParentPickerBtn || !parentPickerModal || !toggleProductsScopeBtn || !toggleVisibleBtn || !parentTree) return;
   var treeRows = Array.from(parentTree.querySelectorAll('.parent-tree-row[data-value]'));
 
   var selectedIds = new Set({{ selected_product_ids|tojson }});
@@ -693,6 +683,21 @@
     toggleProductsScopeBtn.classList.remove('scope-all-active');
   }
 
+  function visibleItemsAllSelected(){
+    var list = filteredItems();
+    if(!list.length) return false;
+    return list.every(function(item){
+      return selectedIds.has(item.id);
+    });
+  }
+
+  function updateVisibleToggleButton(){
+    if(!toggleVisibleBtn) return;
+    toggleVisibleBtn.textContent = visibleItemsAllSelected()
+      ? "Ko'ringanini tozalash"
+      : "Ko'ringanini belgilash";
+  }
+
   function renderEmpty(message, isError){
     var cls = isError ? 'category-products-empty error' : 'category-products-empty';
     wrap.innerHTML = '<div class="' + cls + '">' + escapeHtml(message) + '</div>';
@@ -719,12 +724,14 @@
         renderEmpty("Bo'sh mahsulot topilmadi. Kerak bo'lsa \"Hammasini ko'rsatish\"ni bosing.", false);
       }
       updatePickedCount();
+      updateVisibleToggleButton();
       return;
     }
     var list = filteredItems();
     if(!list.length){
       renderEmpty('Qidiruv bo\'yicha mos mahsulot topilmadi.', false);
       updatePickedCount();
+      updateVisibleToggleButton();
       return;
     }
 
@@ -745,13 +752,14 @@
     }).join('');
     wrap.innerHTML = html;
     updatePickedCount();
+    updateVisibleToggleButton();
   }
 
   function setActionState(enabled){
     searchInput.disabled = !enabled;
     toggleProductsScopeBtn.disabled = !enabled;
-    selectVisibleBtn.disabled = !enabled;
-    clearVisibleBtn.disabled = !enabled;
+    toggleVisibleBtn.disabled = !enabled;
+    updateVisibleToggleButton();
   }
 
   function loadProducts(parentId){
@@ -761,6 +769,7 @@
       renderEmpty('Ota tur tanlang, mahsulotlar shu yerda chiqadi.', false);
       updatePickedCount();
       updateScopeButton();
+      updateVisibleToggleButton();
       return;
     }
     setActionState(true);
@@ -775,6 +784,7 @@
         if(!data || !data.success){
           allItems = [];
           renderEmpty('Mahsulotlarni yuklashda xatolik.', true);
+          updateVisibleToggleButton();
           return;
         }
         renderItems(data.items || []);
@@ -783,6 +793,7 @@
       .catch(function(){
         allItems = [];
         renderEmpty('Mahsulotlarni yuklashda xatolik.', true);
+        updateVisibleToggleButton();
       });
   }
 
@@ -799,18 +810,10 @@
         var nextSort = Number(data.next_sort || 1);
         lastSortSuggestion = nextSort;
         renderSortPreview(siblings);
-        if(sortHintEl){
-          sortHintEl.textContent = 'Kichikroq raqam avval ko\'rinadi. Tavsiya: ' + nextSort + '. Hozir shu bo\'limda ' + siblings.length + ' ta kategoriya bor.';
-        }
         if(!sortTouched && sortInput && !currentCatId){
           sortInput.value = String(nextSort);
         }
       })
-      .catch(function(){
-        if(sortHintEl){
-          sortHintEl.textContent = 'Tartib tavsiyasini olishda xatolik bo\'ldi.';
-        }
-      });
   }
 
   wrap.addEventListener('change', function(e){
@@ -821,6 +824,7 @@
     if(target.checked) selectedIds.add(id);
     else selectedIds.delete(id);
     updatePickedCount();
+    updateVisibleToggleButton();
   });
 
   searchInput.addEventListener('input', function(){
@@ -828,13 +832,13 @@
     renderItems(allItems);
   });
 
-  selectVisibleBtn.addEventListener('click', function(){
-    filteredItems().forEach(function(item){ selectedIds.add(item.id); });
-    renderItems(allItems);
-  });
-
-  clearVisibleBtn.addEventListener('click', function(){
-    filteredItems().forEach(function(item){ selectedIds.delete(item.id); });
+  toggleVisibleBtn.addEventListener('click', function(){
+    var list = filteredItems();
+    var shouldClear = visibleItemsAllSelected();
+    list.forEach(function(item){
+      if(shouldClear) selectedIds.delete(item.id);
+      else selectedIds.add(item.id);
+    });
     renderItems(allItems);
   });
 
@@ -980,6 +984,7 @@
 
   updatePickedCount();
   updateScopeButton();
+  updateVisibleToggleButton();
   syncParentTreeSelection();
   syncParentLabel();
   loadProducts(parentSelect.value || '');

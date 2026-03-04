@@ -915,20 +915,20 @@ button {
   font-weight: 600;
 }
 
-.catalog-tree-link.level-3 {
-  margin-left: 1.6rem;
-}
-
-.catalog-tree-link.level-4 {
-  margin-left: 2.35rem;
-}
-
 .catalog-tree-branch.level-1 {
   margin-left: 0.75rem;
 }
 
 .catalog-tree-branch.level-2 {
-  margin-left: 1.45rem;
+  margin-left: 0.75rem;
+}
+
+.catalog-tree-branch.level-3 {
+  margin-left: 0.75rem;
+}
+
+.catalog-tree-branch.level-4 {
+  margin-left: 0.75rem;
 }
 
 .catalog-products-head {
@@ -1802,22 +1802,6 @@ button {
   .catalog-tree-link {
     padding: 0.42rem 0.52rem;
     font-size: 0.86rem;
-  }
-
-  .catalog-tree-link.level-3 {
-    margin-left: 1.15rem;
-  }
-
-  .catalog-tree-link.level-4 {
-    margin-left: 1.65rem;
-  }
-
-  .catalog-tree-branch.level-1 {
-    margin-left: 0.55rem;
-  }
-
-  .catalog-tree-branch.level-2 {
-    margin-left: 1.05rem;
   }
 
   .breadcrumb {
