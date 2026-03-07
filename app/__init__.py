@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime
-from flask import Flask, g, session
+from flask import Flask, g, session, url_for
 
 DATABASE = os.path.join(os.path.dirname(__file__), '..', 'herb.db')
 CONTACT_SETTINGS_DEFAULTS = {
@@ -483,7 +483,17 @@ def create_app():
             seen.add(k)
             favorite_keys.append(k)
         favorites_count = len(favorite_keys)
+
+        def asset_url(filename):
+            asset_path = os.path.join(app.static_folder, filename)
+            try:
+                version = int(os.path.getmtime(asset_path))
+            except OSError:
+                return url_for('static', filename=filename)
+            return url_for('static', filename=filename, v=version)
+
         return {
+            'asset_url': asset_url,
             'categories': categories,
             'favorites_count': favorites_count,
             'favorite_keys': favorite_keys,

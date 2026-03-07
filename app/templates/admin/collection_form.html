@@ -1,7 +1,7 @@
 {% extends 'admin/base_admin.html' %}
 {% block title %}{% if collection %}Kolleksiya tahrirlash{% else %}Yangi kolleksiya{% endif %} — Admin{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/collection-form.css') }}">
+<link rel="stylesheet" href="{{ asset_url('css/admin/collection-form.css') }}">
 {% endblock %}
 {% block content %}
 <div class="topbar">
@@ -75,5 +75,5 @@
 </div>
 {% endblock %}
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/admin/collection-form.js') }}"></script>
+<script src="{{ asset_url('js/admin/collection-form.js') }}"></script>
 {% endblock %}
