@@ -186,9 +186,9 @@
           <div class="pcard-bottom">
             <div class="pcard-footer">
               <div>
-                <div class="pcard-price" id="price-{{ p['id'] }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
+                <div class="pcard-price" id="price-{{ p['id'] }}">{{ initial_price|format_price }} so'm</div>
                 <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="old-{{ p['id'] }}">
-                  {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+                  {% if initial_old %}{{ initial_old|format_price }} so'm{% endif %}
                 </div>
               </div>
             </div>

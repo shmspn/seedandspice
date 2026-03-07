@@ -324,6 +324,61 @@ def _products_by_parent_category(db, parent_id, include_assigned=False, current_
     return result
 
 
+def _collection_form_products(db):
+    rows = db.execute(
+        'SELECT DISTINCT p.id,p.name,p.image,p.is_active,p.category_id,'
+        'c.name as cat_name,c.icon as cat_icon '
+        'FROM product p '
+        'LEFT JOIN category c ON c.id=p.category_id '
+        'ORDER BY p.is_active DESC, p.id DESC'
+    ).fetchall()
+
+    links = db.execute(
+        'SELECT pc.product_id, c.id as category_id, c.name '
+        'FROM product_categories pc '
+        'JOIN category c ON c.id=pc.category_id '
+        'ORDER BY c.sort_order, c.name'
+    ).fetchall()
+
+    product_category_ids_map = {}
+    product_categories_map = {}
+    for row in links:
+        pid = int(row['product_id'])
+        cid = int(row['category_id'])
+        ids = product_category_ids_map.setdefault(pid, [])
+        if cid not in ids:
+            ids.append(cid)
+
+        name = (row['name'] or '').strip()
+        if not name:
+            continue
+        names = product_categories_map.setdefault(pid, [])
+        if name not in names:
+            names.append(name)
+
+    result = []
+    for row in rows:
+        item = dict(row)
+        pid = int(item['id'])
+        category_ids = list(product_category_ids_map.get(pid, []))
+        fallback_category_id = item.get('category_id')
+        if fallback_category_id not in (None, ''):
+            fallback_category_id = int(fallback_category_id)
+            if fallback_category_id not in category_ids:
+                category_ids.append(fallback_category_id)
+
+        assigned_categories = list(product_categories_map.get(pid, []))
+        fallback_category_name = (item.get('cat_name') or '').strip()
+        if fallback_category_name and fallback_category_name not in assigned_categories:
+            assigned_categories.append(fallback_category_name)
+
+        item['category_ids'] = category_ids
+        item['assigned_categories'] = assigned_categories
+        item['assigned_categories_text'] = ', '.join(assigned_categories)
+        result.append(item)
+    return result
+
+
 def normalize_promo_input(v, end_of_day=False):
     raw = (v or '').strip()
     if not raw:
@@ -616,11 +671,8 @@ def collections():
 @login_required
 def add_collection():
     db = get_db()
-    products = db.execute(
-        'SELECT p.id,p.name,p.image,p.is_active,c.name as cat_name,c.icon as cat_icon '
-        'FROM product p LEFT JOIN category c ON c.id=p.category_id '
-        'ORDER BY p.is_active DESC, p.id DESC'
-    ).fetchall()
+    products = _collection_form_products(db)
+    cats = _parent_category_nodes(db)
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         slug_input = request.form.get('slug', '').strip()
@@ -637,6 +689,7 @@ def add_collection():
                 'admin/collection_form.html',
                 collection=None,
                 products=products,
+                cats=cats,
                 selected_product_ids=selected_product_ids
             )
 
@@ -653,7 +706,13 @@ def add_collection():
         flash("Kolleksiya qo'shildi!", 'success')
         return redirect(url_for('admin.collections'))
 
-    return render_template('admin/collection_form.html', collection=None, products=products, selected_product_ids=[])
+    return render_template(
+        'admin/collection_form.html',
+        collection=None,
+        products=products,
+        cats=cats,
+        selected_product_ids=[]
+    )
 
 @admin.route('/kolleksiyalar/<int:cid>/tahrirlash', methods=['GET', 'POST'])
 @login_required
@@ -663,11 +722,8 @@ def edit_collection(cid):
     if not collection:
         abort(404)
 
-    products = db.execute(
-        'SELECT p.id,p.name,p.image,p.is_active,c.name as cat_name,c.icon as cat_icon '
-        'FROM product p LEFT JOIN category c ON c.id=p.category_id '
-        'ORDER BY p.is_active DESC, p.id DESC'
-    ).fetchall()
+    products = _collection_form_products(db)
+    cats = _parent_category_nodes(db)
     existing_product_ids = [r[0] for r in db.execute(
         'SELECT product_id FROM product_collections WHERE collection_id=?',
         (cid,)
@@ -689,6 +745,7 @@ def edit_collection(cid):
                 'admin/collection_form.html',
                 collection=collection,
                 products=products,
+                cats=cats,
                 selected_product_ids=selected_product_ids or existing_product_ids
             )
 
@@ -709,6 +766,7 @@ def edit_collection(cid):
         'admin/collection_form.html',
         collection=collection,
         products=products,
+        cats=cats,
         selected_product_ids=existing_product_ids
     )
 
@@ -866,37 +924,33 @@ def delete_banner(bid):
 def products():
     db = get_db()
     q = request.args.get('q','').strip()
-    cat_id = request.args.get('cat')
-    tip = request.args.get('tip', '')
+    cat_id = request.args.get('cat', '').strip()
+    selected_cat_id = si(cat_id)
     page = request.args.get('page',1,type=int)
     per_page = 20
 
-    # Top-level categories for product filter
-    all_cats = _root_type_nodes(db)
-    type_rows = db.execute(
-        "SELECT DISTINCT type FROM category WHERE COALESCE(is_type,0)=0 "
-        "AND type IS NOT NULL AND trim(type)<>'' ORDER BY type"
-    ).fetchall()
-    type_options = [r['type'] for r in type_rows]
-    types_map = {slug: [] for slug in type_options}
-    for c in all_cats:
-        t = c['type'] if c['type'] in types_map else ''
-        if t:
-            types_map[t].append(dict(c))
-    # Filtered cats for the select dropdown
-    filtered_cats = types_map.get(tip, []) if tip else [dict(c) for c in all_cats]
+    all_cats = _parent_category_nodes(db)
 
     conds = []
     params = []
     if q:
         conds.append('(p.name LIKE ? OR p.origin LIKE ?)')
         params.extend([f'%{q}%']*2)
-    if cat_id:
-        conds.append('p.category_id=?')
-        params.append(cat_id)
-    elif tip:
-        conds.append('EXISTS (SELECT 1 FROM product_categories pc JOIN category cc ON cc.id=pc.category_id WHERE pc.product_id=p.id AND cc.type=?)')
-        params.append(tip)
+    if selected_cat_id:
+        subtree_ids = _category_subtree_ids(db, selected_cat_id)
+        if subtree_ids:
+            placeholders = ','.join(['?'] * len(subtree_ids))
+            conds.append(
+                '('
+                f'p.category_id IN ({placeholders}) '
+                'OR EXISTS ('
+                'SELECT 1 FROM product_categories pc '
+                f'WHERE pc.product_id=p.id AND pc.category_id IN ({placeholders})'
+                ')'
+                ')'
+            )
+            params.extend(subtree_ids)
+            params.extend(subtree_ids)
     where = ('WHERE '+' AND '.join(conds)) if conds else ''
     total = db.execute(f'SELECT COUNT(*) FROM product p {where}', params).fetchone()[0]
     prods = db.execute(
@@ -905,8 +959,7 @@ def products():
         params+[per_page,(page-1)*per_page]
     ).fetchall()
     return render_template('admin/products.html', products=prods,
-                           cats=filtered_cats, types_map=types_map, type_options=type_options,
-                           q=q, active_cat=cat_id, tip=tip, page=page,
+                           cats=all_cats, q=q, active_cat=selected_cat_id, page=page,
                            total_pages=(total+per_page-1)//per_page, total=total)
 
 @admin.route('/mahsulotlar/qoshish', methods=['GET','POST'])

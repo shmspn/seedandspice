@@ -8,7 +8,7 @@
   <h1 class="page-title">{% if collection %}Kolleksiya tahrirlash{% else %}Yangi kolleksiya{% endif %}</h1>
   <a href="{{ url_for('admin.collections') }}" class="btn btn-outline">← Orqaga</a>
 </div>
-<div class="admin-content">
+<div class="admin-content" id="collectionFormPage">
   <div class="card">
     <form method="POST">
       <div class="form-grid">
@@ -46,11 +46,61 @@
       <div class="collection-form-products-section">
         <div class="collection-form-products-head">
           <label class="collection-form-products-label">Mahsulotlar</label>
-          <input id="collectionProductSearch" type="text" placeholder="Mahsulot qidirish..." class="collection-form-search">
+          <div class="collection-form-products-tools">
+            <input id="collectionProductSearch" type="text" placeholder="Mahsulot qidirish..." class="collection-form-search">
+            <button type="button" id="openCollectionCategoryPickerBtn" class="parent-picker-btn collection-filter-picker-btn">
+              <span id="collectionCategoryPickerLabel">Barcha kategoriyalar</span>
+              <span class="parent-picker-btn-action">Filter</span>
+            </button>
+          </div>
         </div>
+
+        <div class="parent-picker-modal" id="collectionCategoryPickerModal" aria-hidden="true">
+          <div class="parent-picker-backdrop" data-close-parent-picker></div>
+          <div class="parent-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="collectionCategoryPickerTitle">
+            <div class="parent-picker-head">
+              <h3 id="collectionCategoryPickerTitle">Kategoriya bo'yicha filter</h3>
+              <button type="button" class="parent-picker-close" id="closeCollectionCategoryPickerBtn" aria-label="Yopish">✕</button>
+            </div>
+            <div class="parent-picker-sub">Kolleksiyaga qo'shiladigan mahsulotlarni kategoriya daraxti bo'yicha filterlang.</div>
+            <div class="parent-tree-tools">
+              <input type="text" id="collectionCategoryTreeSearch" placeholder="Kategoriya qidirish...">
+              <button type="button"
+                      class="btn btn-outline"
+                      id="collectionCategoryToggleAllBtn"
+                      data-expand-label="Barchasini ochish"
+                      data-collapse-label="Barchasini yopish">Barchasini yopish</button>
+            </div>
+            <div class="parent-tree-preview" id="collectionCategoryTree">
+              <button type="button"
+                      class="parent-tree-row no-children active"
+                      data-value=""
+                      data-cat-id=""
+                      data-parent-id=""
+                      data-tree-depth="0">
+                <span class="parent-tree-toggle">▾</span>
+                <span class="parent-tree-name">Barcha kategoriyalar</span>
+              </button>
+              {% for c in cats %}
+              <button type="button"
+                      class="parent-tree-row"
+                      data-value="{{ c['id'] }}"
+                      data-cat-id="{{ c['id'] }}"
+                      data-parent-id="{{ c['parent_id'] if c['parent_id'] is not none else '' }}"
+                      data-tree-depth="{{ c['depth'] }}">
+                <span class="parent-tree-toggle">▾</span>
+                <span class="parent-tree-name">{{ ((c['icon'] ~ ' ') if c['icon'] else '') ~ c['name'] }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
         <div class="collection-products">
           {% for p in products %}
-          <label class="collection-product-item" data-search="{{ (p.name ~ ' ' ~ (p.cat_name or ''))|lower }}">
+          <label class="collection-product-item"
+                 data-search="{{ (p.name ~ ' ' ~ (p.assigned_categories_text or p.cat_name or ''))|lower }}"
+                 data-category-ids="{{ p.category_ids|join(',') if p.category_ids else '' }}">
             <input type="checkbox" name="product_ids" value="{{ p.id }}" {% if p.id in selected_product_ids %}checked{% endif %}>
             {% if p.image %}
             <img src="{{ url_for('static', filename='img/products/' + p.image) }}" alt="{{ p.name }}">
@@ -59,7 +109,7 @@
             {% endif %}
             <span>
               <strong>{{ p.name }}</strong>
-              <small>{{ p.cat_name or 'Kategoriyasiz' }}{% if not p.is_active %} • nofaol{% endif %}</small>
+              <small>{{ p.assigned_categories_text or p.cat_name or 'Kategoriyasiz' }}{% if not p.is_active %} • nofaol{% endif %}</small>
             </span>
           </label>
           {% endfor %}

@@ -15,6 +15,16 @@ CONTACT_SETTINGS_DEFAULTS = {
     'contact_location_label': '',
 }
 
+
+def format_price(value):
+    if value in (None, ''):
+        return ''
+    try:
+        amount = int(round(float(value)))
+    except (TypeError, ValueError):
+        return value
+    return f"{amount:,}".replace(',', ' ')
+
 def get_db():
     if 'db' not in g:
         database_path = os.getenv('HERB_DB_PATH', DATABASE)
@@ -295,6 +305,7 @@ def init_db(app):
 
 def create_app():
     app = Flask(__name__)
+    app.jinja_env.filters['format_price'] = format_price
     app.secret_key = os.getenv('SECRET_KEY', 'herbmarket-secret-2024')
     app.config['UPLOAD_FOLDER'] = os.getenv(
         'UPLOAD_FOLDER',

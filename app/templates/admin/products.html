@@ -1,5 +1,8 @@
 {% extends 'admin/base_admin.html' %}
 {% block title %}Mahsulotlar — Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ asset_url('css/admin/products.css') }}">
+{% endblock %}
 {% block content %}
 <div class="topbar">
   <h1 class="page-title">Mahsulotlar <span class="page-title-meta">{{ total }} ta</span></h1>
@@ -7,34 +10,66 @@
 </div>
 <div class="admin-content">
   <!-- Filter -->
-  <form method="GET"
-        id="filterForm"
-        class="filter-form"
-        data-all-categories='{{ cats|tojson|forceescape }}'
-        data-types-map='{{ types_map|tojson|forceescape }}'>
+  <form method="GET" id="filterForm" class="filter-form products-filter-form">
     <input name="q" value="{{ q }}" placeholder="Qidirish..." class="admin-form-control admin-search-input">
 
-    <div class="admin-grid-2">
-      <!-- Tur select -->
-      <select name="tip" id="tipSelect" class="admin-form-control">
-        <option value="" {% if not tip %}selected{% endif %}>Barcha turlar</option>
-        {% for t in type_options %}
-        <option value="{{ t }}" {% if tip==t %}selected{% endif %}>{{ t }}</option>
-        {% endfor %}
-      </select>
-  
-      <!-- Kategoriya select (turga qarab filtered) -->
-      <select name="cat" id="catSelect" class="admin-form-control">
-        <option value="">Barcha kategoriyalar</option>
+    <div class="products-filter-row">
+      <button type="button" id="openProductFilterPickerBtn" class="parent-picker-btn products-filter-picker-btn">
+        <span id="productFilterPickerLabel">Barcha kategoriyalar</span>
+        <span class="parent-picker-btn-action">Tanlash</span>
+      </button>
+      <select name="cat" id="productFilterCategorySelect" class="parent-select-hidden">
+        <option value="" data-title="Barcha kategoriyalar">Barcha kategoriyalar</option>
         {% for c in cats %}
-        <option value="{{ c['id'] }}" {% if active_cat==c['id']|string %}selected{% endif %}>{{ c['icon'] }} {{ c['name'] }}</option>
+        <option value="{{ c['id'] }}" data-title="{{ ((c['icon'] ~ ' ' if c['icon'] else '') ~ c['name'])|trim }}" {% if active_cat == c['id'] %}selected{% endif %}>{{ c['label'] }}</option>
         {% endfor %}
       </select>
     </div>
 
-    <div class="admin-grid-2">
+    <div class="products-filter-actions">
       <a href="{{ url_for('admin.products') }}" class="btn btn-outline">Tozalash</a>
       <button type="submit" class="btn btn-green">Qidirish</button>
+    </div>
+
+    <div class="parent-picker-modal" id="productFilterPickerModal" aria-hidden="true">
+      <div class="parent-picker-backdrop" data-close-parent-picker></div>
+      <div class="parent-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="productFilterPickerTitle">
+        <div class="parent-picker-head">
+          <h3 id="productFilterPickerTitle">Kategoriya tanlash</h3>
+          <button type="button" class="parent-picker-close" id="closeProductFilterPickerBtn" aria-label="Yopish">✕</button>
+        </div>
+        <div class="parent-picker-sub">Katalog daraxtidan kerakli kategoriya yoki katta turni tanlang.</div>
+        <div class="parent-tree-tools">
+          <input type="text" id="productFilterTreeSearch" placeholder="Kategoriya qidirish...">
+          <button type="button"
+                  class="btn btn-outline"
+                  id="productFilterToggleAllBtn"
+                  data-expand-label="Barchasini ochish"
+                  data-collapse-label="Barchasini yopish">Barchasini yopish</button>
+        </div>
+        <div class="parent-tree-preview" id="productFilterTree">
+          <button type="button"
+                  class="parent-tree-row no-children{% if not active_cat %} active{% endif %}"
+                  data-value=""
+                  data-cat-id=""
+                  data-parent-id=""
+                  data-tree-depth="0">
+            <span class="parent-tree-toggle">▾</span>
+            <span class="parent-tree-name">Barcha kategoriyalar</span>
+          </button>
+          {% for c in cats %}
+          <button type="button"
+                  class="parent-tree-row{% if active_cat == c['id'] %} active{% endif %}"
+                  data-value="{{ c['id'] }}"
+                  data-cat-id="{{ c['id'] }}"
+                  data-parent-id="{{ c['parent_id'] if c['parent_id'] is not none else '' }}"
+                  data-tree-depth="{{ c['depth'] }}">
+            <span class="parent-tree-toggle">▾</span>
+            <span class="parent-tree-name">{{ ((c['icon'] ~ ' ') if c['icon'] else '') ~ c['name'] }}</span>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
     </div>
   </form>
 
@@ -55,7 +90,7 @@
             <div class="admin-table-strong">{{ p.name }}</div>
           </td>
           <td class="admin-table-muted">{{ p.cat_name or '—' }}</td>
-          <td class="admin-price-cell">{{ "{:,.0f}".format(p.price) }} so'm</td>
+          <td class="admin-price-cell">{{ p.price|format_price }} so'm</td>
           <td>
             {% if p.is_active %}
             <span class="status status-qabul">Faol</span>

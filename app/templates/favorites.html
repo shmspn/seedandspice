@@ -48,9 +48,9 @@
       <div class="pcard-bottom">
         <div class="pcard-footer">
           <div>
-            <div class="pcard-price" id="price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
+            <div class="pcard-price" id="price-{{ card_key }}">{{ initial_price|format_price }} so'm</div>
             <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="old-{{ card_key }}">
-              {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+              {% if initial_old %}{{ initial_old|format_price }} so'm{% endif %}
             </div>
           </div>
         </div>
@@ -117,9 +117,9 @@
         <div class="pcard-bottom">
           <div class="pcard-footer">
             <div>
-              <div class="pcard-price" id="price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
+              <div class="pcard-price" id="price-{{ card_key }}">{{ initial_price|format_price }} so'm</div>
               <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="old-{{ card_key }}">
-                {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+                {% if initial_old %}{{ initial_old|format_price }} so'm{% endif %}
               </div>
             </div>
           </div>

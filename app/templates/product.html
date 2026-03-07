@@ -88,10 +88,10 @@
         </div>
 
         <div class="product-price-meta">
-          <strong class="product-unit-price" id="unitPriceValue">{{ "{:,.0f}".format(initial_price) }} so'm</strong>
+          <strong class="product-unit-price" id="unitPriceValue">{{ initial_price|format_price }} so'm</strong>
           <span id="oldPriceWrap"
             class="product-old-price-wrap{% if not active_old_price %} is-hidden{% endif %}">
-            &nbsp;<span id="oldPriceValue">{% if active_old_price %}{{ "{:,.0f}".format(active_old_price) }}{% endif %}</span> so'm
+            &nbsp;<span id="oldPriceValue">{% if active_old_price %}{{ active_old_price|format_price }}{% endif %}</span> so'm
           </span>
         </div>
 
@@ -126,9 +126,22 @@
         {% if product['benefits'] %}<button type="button" class="tab-btn" data-tab-id="benefits">Foydasi</button>{% endif %}
         {% if product['usage_tips'] %}<button type="button" class="tab-btn" data-tab-id="usage">Qo'llash</button>{% endif %}
       </div>
-      <div id="tab-desc" class="tab-content active">{{ product['description'] or "Tavsif qo'shilmagan." }}</div>
-      {% if product['benefits'] %}<div id="tab-benefits" class="tab-content">{{ product['benefits'] }}</div>{% endif %}
-      {% if product['usage_tips'] %}<div id="tab-usage" class="tab-content">{{ product['usage_tips'] }}</div>{% endif %}
+      <div id="tab-desc" class="tab-content active is-collapsed" data-collapsible-tab>
+        <div class="tab-content-body">{{ product['description'] or "Tavsif qo'shilmagan." }}</div>
+        <button type="button" class="tab-expand-btn is-hidden" data-toggle-tab-content data-expand-label="To'liq ko'rish" data-collapse-label="Qisqartirish">To'liq ko'rish</button>
+      </div>
+      {% if product['benefits'] %}
+      <div id="tab-benefits" class="tab-content is-collapsed" data-collapsible-tab>
+        <div class="tab-content-body">{{ product['benefits'] }}</div>
+        <button type="button" class="tab-expand-btn is-hidden" data-toggle-tab-content data-expand-label="To'liq ko'rish" data-collapse-label="Qisqartirish">To'liq ko'rish</button>
+      </div>
+      {% endif %}
+      {% if product['usage_tips'] %}
+      <div id="tab-usage" class="tab-content is-collapsed" data-collapsible-tab>
+        <div class="tab-content-body">{{ product['usage_tips'] }}</div>
+        <button type="button" class="tab-expand-btn is-hidden" data-toggle-tab-content data-expand-label="To'liq ko'rish" data-collapse-label="Qisqartirish">To'liq ko'rish</button>
+      </div>
+      {% endif %}
     </div>
 
 
@@ -165,9 +178,9 @@
         <div class="pcard-bottom">
           <div class="pcard-footer">
             <div>
-              <div class="pcard-price" id="related-price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
+              <div class="pcard-price" id="related-price-{{ card_key }}">{{ initial_price|format_price }} so'm</div>
               <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="related-old-{{ card_key }}">
-                {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+                {% if initial_old %}{{ initial_old|format_price }} so'm{% endif %}
               </div>
             </div>
           </div>

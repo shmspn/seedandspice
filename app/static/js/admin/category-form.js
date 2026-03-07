@@ -18,8 +18,7 @@
   var parentPickerLabel = document.getElementById('parentPickerLabel');
   var parentTree = document.getElementById('parentTreePreview');
   var parentTreeSearch = document.getElementById('parentTreeSearch');
-  var parentTreeExpandAllBtn = document.getElementById('parentTreeExpandAllBtn');
-  var parentTreeCollapseAllBtn = document.getElementById('parentTreeCollapseAllBtn');
+  var parentTreeToggleAllBtn = document.getElementById('parentTreeToggleAllBtn');
   var wrap = document.getElementById('parentProductsWrap');
   var searchInput = document.getElementById('parentProductsSearch');
   var selectedCountEl = document.getElementById('selectedProductsCount');
@@ -76,6 +75,39 @@
   function setParentTreeExpanded(row, expanded) {
     if (!row || row.classList.contains('no-children')) return;
     row.classList.toggle('is-collapsed', !expanded);
+  }
+
+  function expandableParentRows() {
+    return treeRows.filter(function (row) {
+      return !row.classList.contains('no-children');
+    });
+  }
+
+  function areAllParentRowsExpanded() {
+    var rows = expandableParentRows();
+    if (!rows.length) return true;
+    return rows.every(function (row) {
+      return !row.classList.contains('is-collapsed');
+    });
+  }
+
+  function updateParentTreeToggleButton() {
+    if (!parentTreeToggleAllBtn) return;
+    var rows = expandableParentRows();
+    var expandLabel = parentTreeToggleAllBtn.dataset.expandLabel || 'Barchasini ochish';
+    var collapseLabel = parentTreeToggleAllBtn.dataset.collapseLabel || 'Barchasini yopish';
+    if (!rows.length) {
+      parentTreeToggleAllBtn.disabled = true;
+      parentTreeToggleAllBtn.textContent = expandLabel;
+      parentTreeToggleAllBtn.setAttribute('aria-pressed', 'false');
+      return;
+    }
+    var expanded = rows.every(function (row) {
+      return !row.classList.contains('is-collapsed');
+    });
+    parentTreeToggleAllBtn.disabled = false;
+    parentTreeToggleAllBtn.textContent = expanded ? collapseLabel : expandLabel;
+    parentTreeToggleAllBtn.setAttribute('aria-pressed', expanded ? 'true' : 'false');
   }
 
   function openParentTreeAncestorsByValue(value) {
@@ -155,6 +187,7 @@
     });
     if (current) openParentTreeAncestorsByValue(current);
     refreshParentTreeVisibility();
+    updateParentTreeToggleButton();
   }
 
   function syncParentLabel() {
@@ -171,6 +204,7 @@
     parentPickerModal.classList.add('is-open');
     parentPickerModal.setAttribute('aria-hidden', 'false');
     refreshParentTreeVisibility();
+    updateParentTreeToggleButton();
     if (parentTreeSearch) {
       parentTreeSearch.focus();
       parentTreeSearch.select();
@@ -398,6 +432,7 @@
         if (row.classList.contains('no-children')) return;
         setParentTreeExpanded(row, row.classList.contains('is-collapsed'));
         refreshParentTreeVisibility();
+        updateParentTreeToggleButton();
         return;
       }
 
@@ -423,22 +458,16 @@
     row.classList.remove('is-collapsed');
   });
 
-  if (parentTreeExpandAllBtn) {
-    parentTreeExpandAllBtn.addEventListener('click', function () {
+  if (parentTreeToggleAllBtn) {
+    parentTreeToggleAllBtn.addEventListener('click', function () {
+      var shouldCollapse = areAllParentRowsExpanded();
       treeRows.forEach(function (row) {
-        if (!row.classList.contains('no-children')) row.classList.remove('is-collapsed');
+        if (row.classList.contains('no-children')) return;
+        row.classList.toggle('is-collapsed', shouldCollapse);
       });
+      if (shouldCollapse) openParentTreeAncestorsByValue(parentSelect.value || '');
       refreshParentTreeVisibility();
-    });
-  }
-
-  if (parentTreeCollapseAllBtn) {
-    parentTreeCollapseAllBtn.addEventListener('click', function () {
-      treeRows.forEach(function (row) {
-        if (!row.classList.contains('no-children')) row.classList.add('is-collapsed');
-      });
-      openParentTreeAncestorsByValue(parentSelect.value || '');
-      refreshParentTreeVisibility();
+      updateParentTreeToggleButton();
     });
   }
 
@@ -451,6 +480,7 @@
         });
       }
       refreshParentTreeVisibility();
+      updateParentTreeToggleButton();
     });
   }
 

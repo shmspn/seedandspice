@@ -69,8 +69,11 @@
           <div class="parent-picker-sub">Katalog ko'rinishida kerakli ota turni tanlang.</div>
           <div class="parent-tree-tools">
             <input type="text" id="parentTreeSearch" placeholder="Kategoriya qidirish...">
-            <button type="button" class="btn btn-outline btn-sm" id="parentTreeExpandAllBtn">Barchasini ochish</button>
-            <button type="button" class="btn btn-outline btn-sm" id="parentTreeCollapseAllBtn">Barchasini yopish</button>
+            <button type="button"
+                    class="btn btn-outline"
+                    id="parentTreeToggleAllBtn"
+                    data-expand-label="Barchasini ochish"
+                    data-collapse-label="Barchasini yopish">Barchasini yopish</button>
           </div>
           <div class="parent-tree-preview" id="parentTreePreview">
             <button type="button"
@@ -109,8 +112,10 @@
         </div>
         <div class="category-products-actions">
           <input id="parentProductsSearch" type="text" placeholder="Mahsulot qidirish...">
-          <button type="button" class="btn btn-outline btn-sm" id="toggleProductsScopeBtn">Hammasini ko'rsatish</button>
-          <button type="button" class="btn btn-outline btn-sm" id="toggleVisibleProductsBtn">Ko'ringanini belgilash</button>
+          <div style="display: grid; grid-template-columns:1fr 1fr; gap:0.5rem">
+            <button type="button" class="btn btn-outline btn-sm" id="toggleProductsScopeBtn">Hammasini ko'rsatish</button>
+            <button type="button" class="btn btn-outline btn-sm" id="toggleVisibleProductsBtn">Ko'ringanini belgilash</button>
+          </div>
         </div>
         <div id="parentProductsWrap" class="category-products-grid">
           {% if parent_products %}

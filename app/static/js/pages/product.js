@@ -14,6 +14,11 @@
     if (el) el.classList.toggle('is-hidden', !!hidden);
   }
 
+  function formatPrice(value) {
+    var amount = Math.round(Number(value) || 0);
+    return String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
   var productId = Number(root.dataset.productId || 0);
   var currentVid = root.dataset.currentVid ? Number(root.dataset.currentVid) : null;
   var currentPrice = Number(root.dataset.currentPrice || 0);
@@ -105,7 +110,7 @@
     var hasDiscount = oldPrice && oldPrice > currentPrice && !promoExpired;
 
     if (value && hasDiscount) {
-      value.textContent = Math.round(oldPrice).toLocaleString('uz-UZ');
+      value.textContent = formatPrice(oldPrice);
     }
     setHidden(wrap, !hasDiscount);
     setHidden(badge, !hasDiscount);
@@ -132,7 +137,7 @@
   function updateUnitPriceView(price) {
     var priceEl = document.getElementById('unitPriceValue');
     if (priceEl) {
-      priceEl.textContent = Math.round(price).toLocaleString('uz-UZ') + " so'm";
+      priceEl.textContent = formatPrice(price) + " so'm";
     }
   }
 
@@ -253,8 +258,61 @@
 
     oldEl.classList.toggle('is-hidden', !hasOld);
     if (hasOld) {
-      oldEl.textContent = Math.round(oldPrice).toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + " so'm";
+      oldEl.textContent = formatPrice(oldPrice) + " so'm";
     }
+  }
+
+  function updateTabExpandBtn(tab) {
+    var toggleBtn = tab ? tab.querySelector('[data-toggle-tab-content]') : null;
+    if (!toggleBtn) return;
+
+    var expandLabel = toggleBtn.dataset.expandLabel || "To'liq ko'rish";
+    var collapseLabel = toggleBtn.dataset.collapseLabel || 'Qisqartirish';
+    toggleBtn.textContent = tab.classList.contains('is-expanded') ? collapseLabel : expandLabel;
+  }
+
+  function refreshCollapsibleTab(tab) {
+    var body = tab ? tab.querySelector('.tab-content-body') : null;
+    var toggleBtn = tab ? tab.querySelector('[data-toggle-tab-content]') : null;
+    if (!tab || !body || !toggleBtn) return;
+
+    var wasExpanded = tab.classList.contains('is-expanded');
+
+    tab.classList.remove('has-overflow', 'is-expanded');
+    tab.classList.add('is-collapsed');
+    toggleBtn.classList.add('is-hidden');
+
+    var hasOverflow = body.scrollHeight > body.clientHeight + 4;
+    if (!hasOverflow) {
+      tab.classList.remove('is-collapsed');
+      updateTabExpandBtn(tab);
+      return;
+    }
+
+    tab.classList.add('has-overflow');
+    toggleBtn.classList.remove('is-hidden');
+
+    if (wasExpanded) {
+      tab.classList.remove('is-collapsed');
+      tab.classList.add('is-expanded');
+    }
+
+    updateTabExpandBtn(tab);
+  }
+
+  function refreshActiveCollapsibleTab() {
+    var activeTab = document.querySelector('.tab-content.active[data-collapsible-tab]');
+    if (activeTab) refreshCollapsibleTab(activeTab);
+  }
+
+  function toggleTabContent(btn) {
+    var tab = btn ? btn.closest('.tab-content[data-collapsible-tab]') : null;
+    if (!tab || !tab.classList.contains('has-overflow')) return;
+
+    var expanded = !tab.classList.contains('is-expanded');
+    tab.classList.toggle('is-expanded', expanded);
+    tab.classList.toggle('is-collapsed', !expanded);
+    updateTabExpandBtn(tab);
   }
 
   function selectRelatedVariant(btn) {
@@ -271,7 +329,7 @@
     var cardKey = btn.dataset.cardKey;
     var priceEl = document.getElementById('related-price-' + cardKey);
     if (priceEl) {
-      priceEl.textContent = Math.round(price).toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + " so'm";
+      priceEl.textContent = formatPrice(price) + " so'm";
     }
     updateRelatedOldPrice(cardKey, price, oldPrice);
   }
@@ -285,7 +343,10 @@
     });
 
     var target = document.getElementById('tab-' + id);
-    if (target) target.classList.add('active');
+    if (target) {
+      target.classList.add('active');
+      refreshCollapsibleTab(target);
+    }
     btn.classList.add('active');
   }
 
@@ -314,6 +375,12 @@
       return;
     }
 
+    var tabToggleBtn = event.target.closest('[data-toggle-tab-content]');
+    if (tabToggleBtn && root.contains(tabToggleBtn)) {
+      toggleTabContent(tabToggleBtn);
+      return;
+    }
+
     var relatedFavoriteBtn = event.target.closest('[data-related-favorite]');
     if (relatedFavoriteBtn && root.contains(relatedFavoriteBtn)) {
       event.preventDefault();
@@ -337,8 +404,11 @@
     });
   }
 
+  window.addEventListener('resize', refreshActiveCollapsibleTab);
+
   updateUnitPriceView(currentPrice);
   updateDiscount(currentOldPrice, currentPromoEnd);
   syncFavoriteBtn();
   syncRelatedFavoriteBtns();
+  refreshActiveCollapsibleTab();
 })();

@@ -1584,6 +1584,40 @@ button {
   display: block;
 }
 
+.tab-content-body {
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-content.is-collapsed .tab-content-body {
+  max-height: 11rem;
+}
+
+.tab-content.has-overflow.is-collapsed .tab-content-body::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 3.5rem;
+  background: linear-gradient(180deg, rgba(244, 247, 243, 0), var(--cream) 88%);
+  pointer-events: none;
+}
+
+.tab-expand-btn {
+  margin-top: 0.9rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--green2);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.tab-expand-btn:hover {
+  color: var(--green);
+}
+
 .cta-row {
   display: flex;
   flex-wrap: wrap;

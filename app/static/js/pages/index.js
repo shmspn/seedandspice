@@ -10,6 +10,11 @@
     }
   }
 
+  function formatPrice(value) {
+    var amount = Math.round(Number(value) || 0);
+    return String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
   var favoriteKeys = new Set(parseJson(root.dataset.favoriteKeys, []));
   var addUrl = root.dataset.addUrl || '';
   var removeUrl = root.dataset.removeUrl || '';
@@ -65,7 +70,7 @@
     if (oldEl) {
       oldEl.classList.toggle('is-hidden', !hasOld);
       if (hasOld) {
-        oldEl.textContent = Math.round(oldPrice).toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + " so'm";
+        oldEl.textContent = formatPrice(oldPrice) + " so'm";
       }
     }
 
@@ -85,7 +90,7 @@
     var oldPrice = parseFloat(btn.dataset.oldPrice);
     var el = document.getElementById('price-' + btn.dataset.pid);
     if (el) {
-      el.textContent = price.toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + " so'm";
+      el.textContent = formatPrice(price) + " so'm";
     }
     updateCardOldPrice(btn.dataset.pid, price, oldPrice);
   }
