@@ -19,448 +19,179 @@
 {% set active_old_price = (first_variant['old_price'] if first_variant and first_variant['old_price'] else product['old_price']) %}
 {% set active_promo_end = (first_variant['promo_end_at'] if first_variant and first_variant['promo_end_at'] else (first_variant['promo_end_date'] if first_variant and first_variant['promo_end_date'] else '')) %}
 {% set initial_key = (product['id'] ~ '') %}
+{% set has_gallery_thumbs = images|length > 1 %}
 
-<div class="product-layout">
-  <div class="product-gallery">
-    <button type="button"
-            id="detailFavoriteBtn"
-            class="product-favorite-btn favorite-btn{% if initial_key in favorite_keys %} active{% endif %}"
-            onclick="addToFavoritesDetail()"
-            aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
-      {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
-    </button>
-    <div class="gallery-main">
-      <div class="gallery-track" id="galleryTrack">
-        {% if images %}
+<div id="productPage"
+     data-product-id="{{ product['id'] }}"
+     data-current-vid="{% if variants %}{{ variants[0]['id'] }}{% endif %}"
+     data-current-price="{{ initial_price|float }}"
+     data-current-old-price="{{ (active_old_price if active_old_price else 0)|float }}"
+     data-current-promo-end="{{ active_promo_end|e }}"
+     data-favorite-keys='{{ favorite_keys|tojson|forceescape }}'
+     data-add-url="{{ url_for('main.favorites_add') }}"
+     data-remove-url="{{ url_for('main.favorites_remove') }}">
+
+    <div class="product-layout{% if has_gallery_thumbs %} has-gallery-thumbs{% endif %}">
+      <div class="product-gallery{% if has_gallery_thumbs %} has-thumbs{% endif %}">
+        <button type="button"
+                id="detailFavoriteBtn"
+                class="product-favorite-btn favorite-btn{% if initial_key in favorite_keys %} active{% endif %}"
+                data-toggle-detail-favorite
+                aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
+          {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
+        </button>
+        <div class="gallery-main">
+          <div class="gallery-track" id="galleryTrack">
+            {% if images %}
+              {% for img in images %}
+              <div class="gallery-slide">
+                <img src="{{ url_for('static', filename='img/products/'+img.image_path) }}" alt="{{ product['name'] }} {{ loop.index }}">
+              </div>
+              {% endfor %}
+            {% elif product['image'] %}
+              <div class="gallery-slide">
+                <img src="{{ url_for('static', filename='img/products/'+product['image']) }}" alt="{{ product['name'] }}">
+              </div>
+            {% else %}
+              <div class="gallery-slide gallery-fallback">{{ product['cat_icon'] or '🌿' }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% if has_gallery_thumbs %}
+        <div class="gallery-thumbs" id="galleryThumbs">
           {% for img in images %}
-          <div class="gallery-slide">
-            <img src="{{ url_for('static', filename='img/products/'+img.image_path) }}" alt="{{ product['name'] }} {{ loop.index }}">
-          </div>
+          <button type="button" class="thumb-btn{% if loop.first %} active{% endif %}" data-gallery-index="{{ loop.index0 }}" aria-label="Rasm {{ loop.index }}">
+            <img src="{{ url_for('static', filename='img/products/'+img.image_path) }}" class="thumb" alt="{{ product['name'] }} {{ loop.index }}">
+          </button>
           {% endfor %}
-        {% elif product['image'] %}
-          <div class="gallery-slide">
-            <img src="{{ url_for('static', filename='img/products/'+product['image']) }}" alt="{{ product['name'] }}">
-          </div>
-        {% else %}
-          <div class="gallery-slide gallery-fallback">{{ product['cat_icon'] or '🌿' }}</div>
+        </div>
+        <div class="gallery-mobile-dots" id="galleryMobileDots">
+          {% for _ in images %}
+          <button type="button" class="gallery-dot{% if loop.first %} active{% endif %}" data-gallery-index="{{ loop.index0 }}" aria-label="Slayd {{ loop.index }}"></button>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
-    </div>
-    {% if images|length > 1 %}
-    <div class="gallery-thumbs" id="galleryThumbs">
-      {% for img in images %}
-      <button type="button" class="thumb-btn{% if loop.first %} active{% endif %}" onclick="selectGalleryImage({{ loop.index0 }})" aria-label="Rasm {{ loop.index }}">
-        <img src="{{ url_for('static', filename='img/products/'+img.image_path) }}" class="thumb" alt="{{ product['name'] }} {{ loop.index }}">
-      </button>
-      {% endfor %}
-    </div>
-    <div class="gallery-mobile-dots" id="galleryMobileDots">
-      {% for _ in images %}
-      <button type="button" class="gallery-dot{% if loop.first %} active{% endif %}" onclick="selectGalleryImage({{ loop.index0 }})" aria-label="Slayd {{ loop.index }}"></button>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
 
-  <div>
-    <h2 class="product-name">{{ product['name'] }}</h2>
-    {% if product['origin'] %}<p class="product-origin">📍 Kelib chiqishi: <strong>{{ product['origin'] }}</strong></p>{% endif %}
+      <div class="product-summary">
+        <h2 class="product-name">{{ product['name'] }}</h2>
+        {% if product['origin'] %}<p class="product-origin">📍 Kelib chiqishi: <strong>{{ product['origin'] }}</strong></p>{% endif %}
 
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      {% if active_old_price and active_old_price > initial_price %}
-      {% set disc = ((active_old_price-initial_price)/active_old_price*100)|int %}
-      <span class="badge-sale" id="discountBadge">-{{ disc }}%</span>
-      {% else %}
-      <span class="badge-sale" id="discountBadge" style="display:none;"></span>
-      {% endif %}
-      <span id="discountDays" style="display:none;font-size:0.8rem;color:var(--muted);"></span>
+        <div class="product-discount-row">
+          {% if active_old_price and active_old_price > initial_price %}
+          {% set disc = ((active_old_price-initial_price)/active_old_price*100)|int %}
+          <span class="badge-sale" id="discountBadge">-{{ disc }}%</span>
+          {% else %}
+          <span class="badge-sale is-hidden" id="discountBadge"></span>
+          {% endif %}
+          <span id="discountDays" class="product-discount-days is-hidden"></span>
+        </div>
+
+        <div class="product-price-meta">
+          <strong class="product-unit-price" id="unitPriceValue">{{ "{:,.0f}".format(initial_price) }} so'm</strong>
+          <span id="oldPriceWrap"
+            class="product-old-price-wrap{% if not active_old_price %} is-hidden{% endif %}">
+            &nbsp;<span id="oldPriceValue">{% if active_old_price %}{{ "{:,.0f}".format(active_old_price) }}{% endif %}</span> so'm
+          </span>
+        </div>
+
+        {% if variants %}
+          {% if variants|length > 1 %}
+          <div class="variants-label">Paket tanlang:</div>
+          {% endif %}
+        <div class="variants-row" id="variantBtns">
+          {% for v in variants %}
+          <button class="v-btn{% if loop.first %} active{% endif %}"
+                  type="button"
+                  data-select-variant
+                  data-price="{{ v['price'] }}" data-vid="{{ v['id'] }}"
+                  data-old-price="{{ v['old_price'] if v['old_price'] else '' }}"
+                  data-promo-end="{{ v['promo_end_at'] if v['promo_end_at'] else (v['promo_end_date'] if v['promo_end_date'] else '') }}">{{ v['label'] }}</button>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="cta-row">
+          <a href="tel:+998901234567" class="btn btn-outline">📞 Telefon</a>
+          <a href="https://t.me/998901234567?text={{ ('Assalomu alaykum, ' ~ product['name'] ~ ' mahsuloti boyicha yozayapman.')|urlencode }}" target="_blank" rel="noopener" class="btn btn-outline">💬 Telegram</a>
+        </div>
+        
+      </div>
+
     </div>
 
-    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:0.7rem;">
-      <strong style="font-size: 1.3rem; color: var(--brown);" id="unitPriceValue">{{ "{:,.0f}".format(initial_price) }} so'm</strong>
-      <span id="oldPriceWrap"
-        style="text-decoration:line-through;color:var(--muted);font-size:0.78rem;{% if not active_old_price %}display:none;{% endif %}">
-        &nbsp;<span id="oldPriceValue">{% if active_old_price %}{{ "{:,.0f}".format(active_old_price) }}{% endif %}</span> so'm
-      </span>
-    </div>
-
-    {% if variants %}
-      {% if variants|length > 1 %}
-      <div class="variants-label">Paket tanlang:</div>
-      {% endif %}
-    <div class="variants-row" id="variantBtns">
-      {% for v in variants %}
-      <button class="v-btn{% if loop.first %} active{% endif %}"
-              data-price="{{ v['price'] }}" data-vid="{{ v['id'] }}"
-              data-old-price="{{ v['old_price'] if v['old_price'] else '' }}"
-              data-promo-end="{{ v['promo_end_at'] if v['promo_end_at'] else (v['promo_end_date'] if v['promo_end_date'] else '') }}"
-              onclick="selectV(this)">{{ v['label'] }}</button>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    <div class="cta-row">
-      <a href="tel:+998901234567" class="btn btn-outline">📞 Telefon</a>
-      <a href="https://t.me/998901234567?text={{ ('Assalomu alaykum, ' ~ product['name'] ~ ' mahsuloti boyicha yozayapman.')|urlencode }}" target="_blank" rel="noopener" class="btn btn-outline">💬 Telegram</a>
-    </div>
-    
     <div class="info-tabs">
       <div class="tab-btns">
-        <button class="tab-btn active" onclick="showTab('desc',this)">Tavsif</button>
-        {% if product['benefits'] %}<button class="tab-btn" onclick="showTab('benefits',this)">Foydasi</button>{% endif %}
-        {% if product['usage_tips'] %}<button class="tab-btn" onclick="showTab('usage',this)">Qo'llash</button>{% endif %}
+        <button type="button" class="tab-btn active" data-tab-id="desc">Tavsif</button>
+        {% if product['benefits'] %}<button type="button" class="tab-btn" data-tab-id="benefits">Foydasi</button>{% endif %}
+        {% if product['usage_tips'] %}<button type="button" class="tab-btn" data-tab-id="usage">Qo'llash</button>{% endif %}
       </div>
       <div id="tab-desc" class="tab-content active">{{ product['description'] or "Tavsif qo'shilmagan." }}</div>
       {% if product['benefits'] %}<div id="tab-benefits" class="tab-content">{{ product['benefits'] }}</div>{% endif %}
       {% if product['usage_tips'] %}<div id="tab-usage" class="tab-content">{{ product['usage_tips'] }}</div>{% endif %}
     </div>
-  </div>
-</div>
 
 
-{% if related %}
-<div class="same-products">
-  <div style="margin:2rem 0 1.5rem;">
-    <div class="sec-tag">O'xshash mahsulotlar</div>
-  </div>
-  <div class="products-grid">
-    {% for p in related %}
-    {% set first_variant = p['variants'][0] if p.get('variants') else None %}
-    {% set initial_price = first_variant['price'] if first_variant else p['price'] %}
-    {% set initial_old = (first_variant['old_price'] if first_variant and first_variant['old_price'] else p['old_price']) %}
-    {% set card_key = 'rel-' ~ p['id'] %}
-    {% set initial_key = (p['id'] ~ '') %}
-    <div class="pcard">
-      <a href="{{ url_for('main.product_detail', slug=p['slug']) }}" class="pcard-link">
-        <div class="pcard-img">
-          {% if p.get('primary_image') or p['image'] %}
-            <img src="{{ url_for('static', filename='img/products/'+(p.get('primary_image') or p['image'])) }}" alt="{{ p['name'] }}">
-          {% else %}🌿{% endif %}
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-name">{{ p['name'] }}</div>
-        </div>
-      </a>
-      <button class="pcard-favorite favorite-btn related-favorite-btn{% if initial_key in favorite_keys %} active{% endif %}"
-              type="button"
-              data-pid="{{ p['id'] }}"
-              onclick="toggleRelatedFavorite(event, this)"
-              aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
-        {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
-      </button>
-      <div class="pcard-bottom">
-        <div class="pcard-footer">
-          <div>
-            <div class="pcard-price" id="related-price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
-            <div class="pcard-old" id="related-old-{{ card_key }}" {% if not (initial_old and initial_old > initial_price) %}style="display:none;"{% endif %}>
-              {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+  {% if related %}
+  <div class="same-products">
+    <div class="product-related-head">
+      <div class="sec-tag">O'xshash mahsulotlar</div>
+    </div>
+    <div class="products-grid">
+      {% for p in related %}
+      {% set first_variant = p['variants'][0] if p.get('variants') else None %}
+      {% set initial_price = first_variant['price'] if first_variant else p['price'] %}
+      {% set initial_old = (first_variant['old_price'] if first_variant and first_variant['old_price'] else p['old_price']) %}
+      {% set card_key = 'rel-' ~ p['id'] %}
+      {% set initial_key = (p['id'] ~ '') %}
+      <div class="pcard">
+        <a href="{{ url_for('main.product_detail', slug=p['slug']) }}" class="pcard-link">
+          <div class="pcard-img">
+            {% if p.get('primary_image') or p['image'] %}
+              <img src="{{ url_for('static', filename='img/products/'+(p.get('primary_image') or p['image'])) }}" alt="{{ p['name'] }}">
+            {% else %}🌿{% endif %}
+          </div>
+          <div class="pcard-body">
+            <div class="pcard-name">{{ p['name'] }}</div>
+          </div>
+        </a>
+        <button class="pcard-favorite favorite-btn related-favorite-btn{% if initial_key in favorite_keys %} active{% endif %}"
+                type="button"
+                data-pid="{{ p['id'] }}"
+                data-related-favorite
+                aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
+          {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
+        </button>
+        <div class="pcard-bottom">
+          <div class="pcard-footer">
+            <div>
+              <div class="pcard-price" id="related-price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
+              <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="related-old-{{ card_key }}">
+                {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
+              </div>
             </div>
           </div>
+          {% if p.get('variants') %}
+          <div class="pcard-variants">
+            {% for v in p['variants'] %}
+            <button class="pcard-vbtn{% if loop.first %} active{% endif %}"
+                    type="button"
+                    data-select-related-variant
+                    data-price="{{ v['price'] }}"
+                    data-card-key="{{ card_key }}"
+                    data-vid="{{ v['id'] }}"
+                    data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}">{{ v['label'] }}</button>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
-        {% if p.get('variants') %}
-        <div class="pcard-variants">
-          {% for v in p['variants'] %}
-          <button class="pcard-vbtn{% if loop.first %} active{% endif %}"
-                  data-price="{{ v['price'] }}"
-                  data-card-key="{{ card_key }}"
-                  data-vid="{{ v['id'] }}"
-                  data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}"
-                  onclick="selectRelatedVariant(this)">{{ v['label'] }}</button>
-          {% endfor %}
-        </div>
-        {% endif %}
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
+  {% endif %}
 </div>
-{% endif %}
-
-<script>
-var productId = {{ product['id'] }};
-var currentVid = {% if variants %}{{ variants[0]['id'] }}{% else %}null{% endif %};
-var currentPrice = {{ initial_price|float }};
-var currentOldPrice = {{ (active_old_price if active_old_price else 0)|float }};
-var currentPromoEnd = {{ active_promo_end|tojson }};
-var favoriteKeys = new Set({{ favorite_keys|tojson }});
-var galleryTrack = null;
-var galleryIndex = 0;
-
-function currentFavoriteKey(){
-  return String(productId);
-}
-
-function setFavoriteBtnState(btn, active){
-  if(!btn) return;
-  btn.classList.toggle('active', !!active);
-  btn.textContent = active ? '❤' : '♡';
-  btn.setAttribute('aria-label', active ? "Sevimlida" : "Sevimliga qo'shish");
-}
-
-function syncFavoriteBtn(){
-  var btn = document.getElementById('detailFavoriteBtn');
-  if(!btn) return;
-  setFavoriteBtnState(btn, favoriteKeys.has(currentFavoriteKey()));
-}
-
-function syncRelatedFavoriteBtns(){
-  document.querySelectorAll('.related-favorite-btn').forEach(function(btn){
-    var pid = btn.dataset ? String(btn.dataset.pid || '') : '';
-    if(!pid) return;
-    setFavoriteBtnState(btn, favoriteKeys.has(pid));
-  });
-}
-
-function setFavoriteBadges(count){
-  var badge = document.getElementById('favoriteBadge');
-  if(!badge && count > 0){
-    var icon = document.querySelector('.favorite-icon');
-    if(icon){
-      badge = document.createElement('span');
-      badge.id = 'favoriteBadge';
-      badge.className = 'favorite-badge';
-      icon.appendChild(badge);
-    }
-  }
-  if(badge){
-    if(count > 0) badge.textContent = count;
-    else badge.remove();
-  }
-
-  var badgeMobile = document.getElementById('favoriteBadgeMobile');
-  if(!badgeMobile && count > 0){
-    var mobileIcon = document.querySelector('.favorite-mobile-item');
-    if(mobileIcon){
-      badgeMobile = document.createElement('span');
-      badgeMobile.id = 'favoriteBadgeMobile';
-      badgeMobile.className = 'favorite-badge-mobile';
-      mobileIcon.appendChild(badgeMobile);
-    }
-  }
-  if(badgeMobile){
-    if(count > 0) badgeMobile.textContent = count;
-    else badgeMobile.remove();
-  }
-}
-
-function parsePromoEndDate(raw){
-  if(!raw) return null;
-  var t = String(raw).trim();
-  if(!t) return null;
-  if(t.indexOf(' ') !== -1 && t.indexOf('T') === -1){
-    t = t.replace(' ', 'T');
-  }
-  if(t.indexOf('T') === -1){
-    t = t + 'T23:59:59';
-  }
-  var d = new Date(t);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function updateDiscount(oldPrice, promoEnd){
-  var badge = document.getElementById('discountBadge');
-  var daysEl = document.getElementById('discountDays');
-  var wrap  = document.getElementById('oldPriceWrap');
-  var val   = document.getElementById('oldPriceValue');
-  var endAt = parsePromoEndDate(promoEnd);
-  var now = new Date();
-  var promoExpired = !!(endAt && endAt.getTime() <= now.getTime());
-  if(oldPrice && oldPrice > currentPrice && !promoExpired){
-    if(val)  val.textContent = Math.round(oldPrice).toLocaleString('uz-UZ');
-    if(wrap) wrap.style.display = 'inline';
-    if(badge){
-      badge.style.display = 'inline-flex';
-      badge.textContent = '-' + Math.round((oldPrice-currentPrice)/oldPrice*100) + '%';
-    }
-    if(daysEl){
-      if(endAt && endAt.getTime() > now.getTime()){
-        var daysLeft = Math.ceil((endAt.getTime() - now.getTime()) / 86400000);
-        if(daysLeft < 1) daysLeft = 1;
-        daysEl.style.display = 'inline';
-        if(daysLeft === 1){
-          daysEl.textContent = 'Aksiyaning oxirgi kuni!';
-        } else {
-          daysEl.textContent = 'Aksiya tugashiga ' + daysLeft + ' kun qoldi';
-        }
-      } else {
-        daysEl.style.display = 'none';
-        daysEl.textContent = '';
-      }
-    }
-  } else {
-    if(wrap) wrap.style.display = 'none';
-    if(badge) badge.style.display = 'none';
-    if(daysEl){
-      daysEl.style.display = 'none';
-      daysEl.textContent = '';
-    }
-  }
-}
-
-function updateUnitPriceView(price){
-  var priceEl = document.getElementById('unitPriceValue');
-  if(priceEl) priceEl.textContent = Math.round(price).toLocaleString('uz-UZ') + " so'm";
-}
-
-function updateGalleryState(index){
-  document.querySelectorAll('.thumb-btn').forEach(function(btn, i){
-    btn.classList.toggle('active', i === index);
-  });
-  document.querySelectorAll('.gallery-dot').forEach(function(dot, i){
-    dot.classList.toggle('active', i === index);
-  });
-}
-
-function selectGalleryImage(index){
-  if(!galleryTrack) return;
-  galleryIndex = index;
-  galleryTrack.scrollTo({ left: galleryTrack.clientWidth * index, behavior: 'smooth' });
-  updateGalleryState(index);
-}
-
-function onGalleryScroll(){
-  if(!galleryTrack || !galleryTrack.clientWidth) return;
-  var idx = Math.round(galleryTrack.scrollLeft / galleryTrack.clientWidth);
-  if(idx !== galleryIndex){
-    galleryIndex = idx;
-    updateGalleryState(idx);
-  }
-}
-
-function selectV(btn){
-  document.querySelectorAll('.v-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  currentVid = parseInt(btn.dataset.vid);
-  currentPrice = parseFloat(btn.dataset.price);
-  currentOldPrice = parseFloat(btn.dataset.oldPrice) || 0;
-  currentPromoEnd = btn.dataset.promoEnd || '';
-  updateUnitPriceView(currentPrice);
-  updateDiscount(currentOldPrice, currentPromoEnd);
-  syncFavoriteBtn();
-}
-
-function addToFavoritesDetail(){
-  var key = currentFavoriteKey();
-  var isActive = favoriteKeys.has(key);
-  var url = isActive ? '{{ url_for("main.favorites_remove") }}' : '{{ url_for("main.favorites_add") }}';
-  var payload = isActive ? {key: key} : {product_id: productId, variant_id: currentVid};
-
-  fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(!data.success){
-      alert(data.error || 'Xatolik yuz berdi');
-      return;
-    }
-
-    if(isActive){
-      favoriteKeys.delete(key);
-    } else {
-      favoriteKeys.add(data.key || key);
-    }
-    syncFavoriteBtn();
-    syncRelatedFavoriteBtns();
-    setFavoriteBadges(data.favorites_count || 0);
-
-  })
-  .catch(function(){ alert("Tarmoq xatosi, qayta urinib ko'ring"); });
-}
-
-function toggleRelatedFavorite(event, btn){
-  if(event){
-    event.preventDefault();
-    event.stopPropagation();
-  }
-  var pid = btn && btn.dataset ? btn.dataset.pid : '';
-  if(!pid) return;
-  var key = String(pid);
-  var isActive = favoriteKeys.has(key);
-  var url = isActive ? '{{ url_for("main.favorites_remove") }}' : '{{ url_for("main.favorites_add") }}';
-  var vid = null;
-  if(!isActive){
-    var card = btn.closest('.pcard');
-    var activeVariant = card ? card.querySelector('.pcard-vbtn.active') : null;
-    if(activeVariant && activeVariant.dataset.vid) vid = Number(activeVariant.dataset.vid);
-  }
-  var payload = isActive ? {key: key} : {product_id: Number(pid), variant_id: vid};
-
-  fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(!data.success){
-      alert(data.error || 'Xatolik yuz berdi');
-      return;
-    }
-
-    if(isActive){
-      favoriteKeys.delete(key);
-    } else {
-      favoriteKeys.add(data.key || key);
-    }
-    syncFavoriteBtn();
-    syncRelatedFavoriteBtns();
-    setFavoriteBadges(data.favorites_count || 0);
-  })
-  .catch(function(){ alert("Tarmoq xatosi, qayta urinib ko'ring"); });
-}
-
-function updateRelatedOldPrice(cardKey, price, oldPrice){
-  var oldEl = document.getElementById('related-old-' + cardKey);
-  var hasOld = oldPrice && oldPrice > price;
-  if(!oldEl) return;
-  if(hasOld){
-    oldEl.style.display = 'block';
-    oldEl.textContent = Math.round(oldPrice).toLocaleString('uz-UZ', {maximumFractionDigits:0}) + " so'm";
-  } else {
-    oldEl.style.display = 'none';
-  }
-}
-
-function selectRelatedVariant(btn){
-  var wrap = btn.closest('.pcard-variants');
-  if(!wrap) return;
-  wrap.querySelectorAll('.pcard-vbtn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-
-  var price = parseFloat(btn.dataset.price);
-  var oldPrice = parseFloat(btn.dataset.oldPrice);
-  var cardKey = btn.dataset.cardKey;
-  var priceEl = document.getElementById('related-price-' + cardKey);
-  if(priceEl){
-    priceEl.textContent = Math.round(price).toLocaleString('uz-UZ', {maximumFractionDigits:0}) + " so'm";
-  }
-  updateRelatedOldPrice(cardKey, price, oldPrice);
-}
-
-function showTab(id, btn){
-  document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
-  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
-  document.getElementById('tab-' + id).classList.add('active');
-  btn.classList.add('active');
-}
-
-(function(){
-  galleryTrack = document.getElementById('galleryTrack');
-  if(galleryTrack){
-    galleryTrack.addEventListener('scroll', onGalleryScroll, { passive: true });
-    updateGalleryState(0);
-    window.addEventListener('resize', function(){
-      if(!galleryTrack) return;
-      galleryTrack.scrollLeft = galleryTrack.clientWidth * galleryIndex;
-    });
-  }
-  updateUnitPriceView(currentPrice);
-  updateDiscount(currentOldPrice, currentPromoEnd);
-  syncFavoriteBtn();
-  syncRelatedFavoriteBtns();
-})();
-</script>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pages/product.js') }}"></script>
 {% endblock %}

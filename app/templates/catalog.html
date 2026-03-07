@@ -13,7 +13,7 @@
               class="catalog-tree-toggle level-{{ level }}{% if is_open %} active{% endif %}"
               data-target="{{ prefix }}-branch-{{ item['id'] }}"
               aria-expanded="{{ 'true' if is_open else 'false' }}">
-        <span>{{ item['icon'] }} {{ item['name'] }}</span>
+        <span>{{ item['icon'] }} {{' '}} {{ item['name'] }}</span>
         <span class="catalog-tree-arrow">›</span>
       </button>
 
@@ -47,7 +47,7 @@
               class="catalog-tree-toggle catalog-tree-top{% if is_open %} active{% endif %}"
               data-target="{{ prefix }}-branch-{{ top['id'] }}"
               aria-expanded="{{ 'true' if is_open else 'false' }}">
-        <span>{{ top['icon'] }} {{ top['name'] }}</span>
+        <span>{{ top['icon'] }} {{' '}} {{ top['name'] }}</span>
         <span class="catalog-tree-arrow">›</span>
       </button>
 
@@ -76,6 +76,10 @@
 {% set focus_all = request.args.get('focus') == 'all' %}
 {% set focus_mode_mobile = active_category or (active_type and focus_all) %}
 
+<div id="catalogPage"
+     data-favorite-keys='{{ favorite_keys|tojson|forceescape }}'
+     data-add-url="{{ url_for('main.favorites_add') }}"
+     data-remove-url="{{ url_for('main.favorites_remove') }}">
 <section class="section container">
   {% if not focus_mode_mobile %}
   <div class="catalog-mobile-tree">
@@ -92,7 +96,26 @@
 
     <div class="catalog-main">
       
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;">
+      <div class="catalog-toolbar">
+        <div class="catalog-toolbar-copy">
+          <h1 class="catalog-page-title">
+            {% if active_category %}
+              {{ active_category['name'] }}
+            {% elif active_type %}
+              Barcha {{ active_type['name']|lower }}
+            {% elif active_collection %}
+              {{ active_collection['name'] }}
+            {% elif search %}
+              "{{ search }}" bo'yicha natijalar
+            {% else %}
+              Barcha mahsulotlar
+            {% endif %}
+          </h1>
+          <p class="catalog-page-meta">
+            {{ total }} ta mahsulot
+          </p>
+        </div>
+
         {% if active_category %}
         <div class="catalog-back-wrap mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
           <span class="catalog-back-text">{{ active_category['name'] }}</span>
@@ -112,14 +135,14 @@
         {% endif %}
         
         {% if search %}
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <span style="background:var(--cream2);padding:0.3rem 0.8rem;border-radius:100px;font-size:0.8rem;color:var(--brown);">
+        <div class="catalog-search-tags">
+          <span class="catalog-search-pill">
             🔍 "{{ search }}"
-            <a href="{{ url_for('main.catalog', tur=tur if tur else None, kategoriya=active_category['slug'] if active_category else None, collection=collection, sort=sort, focus='all' if (focus_all and not active_category) else None) }}" style="color:var(--muted);">✕</a>
+            <a href="{{ url_for('main.catalog', tur=tur if tur else None, kategoriya=active_category['slug'] if active_category else None, collection=collection, sort=sort, focus='all' if (focus_all and not active_category) else None) }}" class="catalog-search-pill-clear">✕</a>
           </span>
         </div>
         {% else %}
-        <div></div>
+        <div class="catalog-toolbar-spacer"></div>
         {% endif %}
         
         <form method="GET" class="catalog-sort-form mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
@@ -128,7 +151,7 @@
           {% if collection %}<input type="hidden" name="collection" value="{{ collection }}">{% endif %}
           {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
           {% if focus_all and not active_category %}<input type="hidden" name="focus" value="all">{% endif %}
-          <select name="sort" onchange="this.form.submit()" style="padding:0.5rem 0.8rem;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:inherit;font-size:0.85rem;color:var(--text);outline:none;">
+          <select name="sort" class="catalog-sort-select" data-auto-submit>
             <option value="mashhur" {% if sort=='mashhur' %}selected{% endif %}>Mashhur</option>
             <option value="arzon" {% if sort=='arzon' %}selected{% endif %}>Arzonroq</option>
             <option value="qimmat" {% if sort=='qimmat' %}selected{% endif %}>Qimmatroq</option>
@@ -155,7 +178,8 @@
           </a>
           <button class="pcard-favorite favorite-btn{% if initial_key in favorite_keys %} active{% endif %}"
                   type="button"
-                  onclick="addToFavorites({{ p['id'] }}, null, this)"
+                  data-toggle-favorite
+                  data-product-id="{{ p['id'] }}"
                   aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
             {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
           </button>
@@ -163,7 +187,7 @@
             <div class="pcard-footer">
               <div>
                 <div class="pcard-price" id="price-{{ p['id'] }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
-                <div class="pcard-old" id="old-{{ p['id'] }}" {% if not (initial_old and initial_old > initial_price) %}style="display:none;"{% endif %}>
+                <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="old-{{ p['id'] }}">
                   {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
                 </div>
               </div>
@@ -173,9 +197,10 @@
             <div class="pcard-variants">
               {% for v in p['variants'] %}
               <button class="pcard-vbtn{% if loop.first %} active{% endif %}"
+                      type="button"
+                      data-select-variant
                       data-price="{{ v['price'] }}" data-pid="{{ p['id'] }}" data-vid="{{ v['id'] }}"
-                      data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}"
-                      onclick="selectVariant(this)">{{ v['label'] }}</button>
+                      data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}">{{ v['label'] }}</button>
               {% endfor %}
             </div>
             {% endif %}
@@ -196,169 +221,19 @@
       </div>
       {% endif %}
       {% else %}
-      <div style="text-align:center;padding:5rem 2rem;background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);">
-        <p style="font-size:4rem;margin-bottom:1rem;">🌿</p>
-        <h3 style="font-family:'Fraunces',serif;color:var(--brown);margin-bottom:0.5rem;">Mahsulot topilmadi</h3>
-        <p style="color:var(--muted);">Tanlangan bo'lim uchun hozircha mahsulot yo'q.</p>
-        <a href="{{ url_for('main.catalog') }}" class="btn btn-outline" style="margin-top:1.5rem;">Barchasini ko'rish</a>
+      <div class="catalog-empty-state">
+        <p class="catalog-empty-icon">🌿</p>
+        <h3 class="catalog-empty-title">Mahsulot topilmadi</h3>
+        <p class="catalog-empty-copy">Tanlangan bo'lim uchun hozircha mahsulot yo'q.</p>
+        <a href="{{ url_for('main.catalog') }}" class="btn btn-outline catalog-empty-link">Barchasini ko'rish</a>
       </div>
       {% endif %}
     </div>
   </div>
 </section>
-
-<script>
-var favoriteKeys = new Set({{ favorite_keys|tojson }});
-
-function currentCardKey(pid, vid){
-  return String(pid);
-}
-
-function setFavoriteBtnState(btn, isActive){
-  if(!btn) return;
-  btn.classList.toggle('active', isActive);
-  btn.textContent = isActive ? '❤' : '♡';
-  btn.setAttribute('aria-label', isActive ? 'Sevimlida' : 'Sevimliga qo\'shish');
-}
-
-function setFavoriteBadges(count){
-  var badge = document.getElementById('favoriteBadge');
-  if(!badge && count > 0){
-    var icon = document.querySelector('.favorite-icon');
-    if(icon){
-      badge = document.createElement('span');
-      badge.id = 'favoriteBadge';
-      badge.className = 'favorite-badge';
-      icon.appendChild(badge);
-    }
-  }
-  if(badge){
-    if(count > 0) badge.textContent = count;
-    else badge.remove();
-  }
-
-  var badgeMobile = document.getElementById('favoriteBadgeMobile');
-  if(!badgeMobile && count > 0){
-    var mobileIcon = document.querySelector('.favorite-mobile-item');
-    if(mobileIcon){
-      badgeMobile = document.createElement('span');
-      badgeMobile.id = 'favoriteBadgeMobile';
-      badgeMobile.className = 'favorite-badge-mobile';
-      mobileIcon.appendChild(badgeMobile);
-    }
-  }
-  if(badgeMobile){
-    if(count > 0) badgeMobile.textContent = count;
-    else badgeMobile.remove();
-  }
-}
-
-function updateCardOldPrice(pid, price, oldPrice){
-  var oldEl = document.getElementById('old-'+pid);
-  var badge = document.getElementById('badge-'+pid);
-  var hasOld = oldPrice && oldPrice > price;
-  if(oldEl){
-    if(hasOld){
-      oldEl.style.display = 'block';
-      oldEl.textContent = Math.round(oldPrice).toLocaleString('uz-UZ',{maximumFractionDigits:0}) + ' so\'m';
-    } else {
-      oldEl.style.display = 'none';
-    }
-  }
-  if(badge) badge.style.display = hasOld ? 'inline-flex' : 'none';
-}
-
-function selectVariant(btn){
-  btn.closest('.pcard-variants').querySelectorAll('.pcard-vbtn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  var price = parseFloat(btn.dataset.price);
-  var oldPrice = parseFloat(btn.dataset.oldPrice);
-  var el = document.getElementById('price-'+btn.dataset.pid);
-  if(el) el.textContent = price.toLocaleString('uz-UZ',{maximumFractionDigits:0})+' so\'m';
-  updateCardOldPrice(btn.dataset.pid, price, oldPrice);
-}
-
-function addToFavorites(pid, vid, btn){
-  if(!vid && btn){
-    var card = btn.closest('.pcard');
-    var active = card ? card.querySelector('.pcard-vbtn.active') : null;
-    if(active && active.dataset.vid) vid = parseInt(active.dataset.vid);
-  }
-  var key = currentCardKey(pid, vid);
-  var isActive = favoriteKeys.has(key);
-  var url = isActive ? '{{ url_for("main.favorites_remove") }}' : '{{ url_for("main.favorites_add") }}';
-  var payload = isActive ? {key: key} : {product_id: pid, variant_id: vid};
-
-  fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  }).then(function(r){ return r.json(); }).then(function(data){
-    if(!data.success) return;
-
-    if(isActive){
-      favoriteKeys.delete(key);
-      setFavoriteBtnState(btn, false);
-    } else {
-      favoriteKeys.add(data.key || key);
-      setFavoriteBtnState(btn, true);
-    }
-    setFavoriteBadges(data.favorites_count || 0);
-  });
-}
-
-function setupCatalogAccordion(){
-  function markBranchOpening(branch){
-    if(!branch) return;
-    if(branch._openingTimer){
-      clearTimeout(branch._openingTimer);
-    }
-    branch.classList.add('is-opening');
-    branch._openingTimer = setTimeout(function(){
-      branch.classList.remove('is-opening');
-    }, 220);
-  }
-
-  function expandBranch(branch){
-    if(!branch) return;
-    branch.classList.remove('is-collapsed');
-    markBranchOpening(branch);
-  }
-
-  function collapseBranch(branch){
-    if(!branch) return;
-    branch.classList.add('is-collapsed');
-  }
-
-  function syncArrow(btn, isOpen){
-    btn.classList.toggle('active', !!isOpen);
-  }
-
-  var toggles = document.querySelectorAll('.catalog-tree-toggle[data-target]');
-  toggles.forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var targetId = btn.getAttribute('data-target');
-      if(!targetId) return;
-      var branch = document.getElementById(targetId);
-      if(!branch) return;
-
-      var willOpen = branch.classList.contains('is-collapsed');
-      if(willOpen){
-        expandBranch(branch);
-      } else {
-        collapseBranch(branch);
-      }
-      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-      syncArrow(btn, willOpen);
-
-      if(btn.classList.contains('catalog-tree-top')){
-        var group = btn.closest('.catalog-tree-group');
-        if(group) group.classList.toggle('open', willOpen);
-      }
-    });
-  });
-}
-
-setupCatalogAccordion();
-</script>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pages/catalog.js') }}"></script>
+<script>setupCatalogAccordion();</script>
 {% endblock %}

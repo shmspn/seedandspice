@@ -1,29 +1,32 @@
 {% extends 'admin/base_admin.html' %}
 {% block title %}{% if product %}Tahrirlash{% else %}Qo'shish{% endif %} — Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/product-form.css') }}">
+{% endblock %}
 {% block content %}
 <div class="topbar">
   <h1 class="page-title">{% if product %}Mahsulotni tahrirlash{% else %}Yangi mahsulot{% endif %}</h1>
   <a href="{{ url_for('admin.products') }}" class="btn btn-outline">← Orqaga</a>
 </div>
-<div class="admin-content form-content">
+<div class="admin-content form-content" id="productFormPage">
   <div class="card">
-    <form id="mainForm" method="POST" enctype="multipart/form-data"
-      action="{% if product %}{{ url_for('admin.edit_product', pid=product.id) }}{% else %}{{ url_for('admin.add_product') }}{% endif %}">
+    <form id="mainForm"
+          method="POST"
+          enctype="multipart/form-data"
+          data-initial-variant-count="{{ variants|length if variants else 1 }}"
+          action="{% if product %}{{ url_for('admin.edit_product', pid=product.id) }}{% else %}{{ url_for('admin.add_product') }}{% endif %}">
 
       <div class="form-grid">
         <div class="form-group full pf-name-origin">
           <label>Mahsulot nomi *
-            <input type="text" name="name" value="{{ product.name if product else '' }}" required
-              placeholder="masalan: Qizil qalampir (o'tkir)">
+            <input type="text" name="name" value="{{ product.name if product else '' }}" required placeholder="masalan: Qizil qalampir (o'tkir)">
           </label>
 
           <label>Kelib chiqishi
-            <input type="text" name="origin" value="{{ product.origin if product else '' }}"
-              placeholder="Hindiston, Andijon...">
+            <input type="text" name="origin" value="{{ product.origin if product else '' }}" placeholder="Hindiston, Andijon...">
           </label>
         </div>
 
-        <!-- KATEGORIYALAR (tree checkbox) -->
         <div class="form-group full">
           <label>Kategoriyalar *</label>
           <div class="cat-checkboxes">
@@ -36,9 +39,11 @@
               <label class="cat-check-item cat-tree-item"
                      data-cat-id="{{ c.id }}"
                      data-parent-id="{{ c.parent_id if c.parent_id is not none else '' }}"
-                     data-depth="{{ c.depth }}"
-                     style="--depth: {{ c.depth }};">
-                <input type="checkbox" name="category_ids" value="{{ c.id }}" style="width:auto;"
+                     data-depth="{{ c.depth }}">
+                <input class="cat-check-input" style="width: 20px;"
+                       type="checkbox"
+                       name="category_ids"
+                       value="{{ c.id }}"
                        {% if product_category_ids is defined and c.id in product_category_ids %}checked{% endif %}>
                 <span class="cat-check-text">
                   {% if c.depth > 0 %}<span class="cat-tree-prefix">↳</span>{% endif %}
@@ -52,66 +57,49 @@
 
         <div class="form-group full">
           <label>Tavsif</label>
-          <textarea name="description" rows="4"
-            placeholder="Mahsulot haqida batafsil...">{{ product.description if product else '' }}</textarea>
+          <textarea name="description" rows="4" placeholder="Mahsulot haqida batafsil...">{{ product.description if product else '' }}</textarea>
         </div>
 
         <div class="form-group">
           <label>Foydasi / Xususiyatlari</label>
-          <textarea name="benefits" rows="4"
-            placeholder="Qon bosimini normallashtiradi...">{{ product.benefits if product else '' }}</textarea>
+          <textarea name="benefits" rows="4" placeholder="Qon bosimini normallashtiradi...">{{ product.benefits if product else '' }}</textarea>
         </div>
         <div class="form-group">
           <label>Qo'llash usuli</label>
-          <textarea name="usage_tips" rows="4"
-            placeholder="Taomga qo'shiladi, choy sifatida...">{{ product.usage_tips if product else '' }}</textarea>
+          <textarea name="usage_tips" rows="4" placeholder="Taomga qo'shiladi, choy sifatida...">{{ product.usage_tips if product else '' }}</textarea>
         </div>
 
         <div class="form-group full pf-flags">
-          <label class="check-label"><input type="checkbox" name="is_active" {% if not product or product.is_active
-              %}checked{% endif %}> ✅ Faol</label>
-          <label class="check-label"><input type="checkbox" name="is_featured" {% if product and product.is_featured
-              %}checked{% endif %}> ⭐ Bosh sahifada</label>
+          <label class="check-label"><input type="checkbox" name="is_active" {% if not product or product.is_active %}checked{% endif %}> ✅ Faol</label>
+          <label class="check-label"><input type="checkbox" name="is_featured" {% if product and product.is_featured %}checked{% endif %}> ⭐ Bosh sahifada</label>
         </div>
-
-
       </div>
+
       <div class="form-group">
         <label>O'lchov turi *</label>
-        <select name="unit_type" id="unitTypeSelect" onchange="updateUnitHint()"
-          style="padding:0.55rem 1rem;border:1.5px solid var(--a-border);border-radius:8px;background:var(--a-input);color:var(--a-text);font-size:0.85rem;outline:none;width:100%;">
-          <option value="dona" {% if not product or product.unit_type=='dona' or not product.unit_type %}selected{%
-            endif %}>📦 Dona (pachka, qop, bo'lak)</option>
-          <option value="kg" {% if product and product.unit_type=='kg' %}selected{% endif %}>⚖️ Kilogramm (gramm
-            asosida)</option>
+        <select name="unit_type" id="unitTypeSelect" class="admin-form-control">
+          <option value="dona" {% if not product or product.unit_type=='dona' or not product.unit_type %}selected{% endif %}>📦 Dona (pachka, qop, bo'lak)</option>
+          <option value="kg" {% if product and product.unit_type=='kg' %}selected{% endif %}>⚖️ Kilogramm (gramm asosida)</option>
         </select>
-
+        <div id="unitTypeHint" class="unit-type-hint"></div>
       </div>
 
-      <!-- VARIANTLAR -->
-      <div style="border-top:1px solid var(--a-border);padding-top:1.2rem;margin-top:0.5rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
-          <p style="font-size:0.85rem;font-weight:600;color:var(--a-white);">📦 Og'irlik / Hajm variantlari</p>
-          <button type="button" onclick="addVariant()" class="btn btn-outline btn-sm">+ Variant qo'shish</button>
+      <div class="product-form-section">
+        <div class="product-form-head">
+          <p class="product-form-section-title">📦 Og'irlik / Hajm variantlari</p>
+          <button type="button" class="btn btn-outline btn-sm" data-add-variant>+ Variant qo'shish</button>
         </div>
 
         <div id="variantRows">
           {% if variants %}
           {% for v in variants %}
           <div class="variant-row">
-            <input type="text" name="v_label_{{ loop.index0 }}" value="{{ v.label }}"
-              placeholder="Variant (100g, 1kg, 250ml)">
-            <input type="number" name="v_price_{{ loop.index0 }}" value="{{ v.price }}" placeholder="Narx (so'm)"
-              min="1" step="any">
-            <input type="number" name="v_old_price_{{ loop.index0 }}" value="{{ v.old_price if v.old_price else '' }}"
-              placeholder="Eski narx" min="1" step="any">
-            <input type="date" name="v_promo_start_{{ loop.index0 }}"
-              value="{{ ((v.promo_start_at if v.promo_start_at else '')|replace(' ', 'T'))[:10] }}"
-              title="Aksiya boshlanish sanasi">
-            <input type="date" name="v_promo_end_{{ loop.index0 }}"
-              value="{{ (((v.promo_end_at if v.promo_end_at else (v.promo_end_date if v.promo_end_date else '')))|replace(' ', 'T'))[:10] }}"
-              title="Aksiya tugash sanasi">
-            <button type="button" class="btn-remove-var" onclick="removeVariant(this)">✕</button>
+            <input type="text" name="v_label_{{ loop.index0 }}" value="{{ v.label }}" placeholder="Variant (100g, 1kg, 250ml)">
+            <input type="number" name="v_price_{{ loop.index0 }}" value="{{ v.price }}" placeholder="Narx (so'm)" min="1" step="any">
+            <input type="number" name="v_old_price_{{ loop.index0 }}" value="{{ v.old_price if v.old_price else '' }}" placeholder="Eski narx" min="1" step="any">
+            <input type="date" name="v_promo_start_{{ loop.index0 }}" value="{{ ((v.promo_start_at if v.promo_start_at else '')|replace(' ', 'T'))[:10] }}" title="Aksiya boshlanish sanasi">
+            <input type="date" name="v_promo_end_{{ loop.index0 }}" value="{{ (((v.promo_end_at if v.promo_end_at else (v.promo_end_date if v.promo_end_date else '')))|replace(' ', 'T'))[:10] }}" title="Aksiya tugash sanasi">
+            <button type="button" class="btn-remove-var" data-remove-variant>✕</button>
           </div>
           {% endfor %}
           {% else %}
@@ -121,30 +109,27 @@
             <input type="number" name="v_old_price_0" placeholder="Eski narx" min="1" step="any">
             <input type="date" name="v_promo_start_0" title="Aksiya boshlanish sanasi">
             <input type="date" name="v_promo_end_0" title="Aksiya tugash sanasi">
-            <button type="button" class="btn-remove-var" onclick="removeVariant(this)">✕</button>
+            <button type="button" class="btn-remove-var" data-remove-variant>✕</button>
           </div>
           {% endif %}
         </div>
       </div>
 
-      <!-- RASMLAR -->
-      <div style="border-top:1px solid var(--a-border);padding-top:1.2rem;margin-top:1rem;">
-        <p style="font-size:0.85rem;font-weight:600;color:var(--a-white);margin-bottom:0.6rem;">🖼 Rasmlar</p>
-        <input type="file" name="images" accept="image/*" multiple style="font-size:0.85rem;color:var(--a-muted);">
+      <div class="product-form-section product-form-images-section">
+        <p class="product-form-section-title product-form-section-title-spaced">🖼 Rasmlar</p>
+        <input type="file" name="images" accept="image/*" multiple class="product-form-file-input">
 
         {% if product_images is defined and product_images %}
-        <div class="img-grid" style="margin-top:0.8rem;">
+        <div class="img-grid product-form-image-grid">
           {% for img in product_images %}
           <div class="img-thumb{% if img.is_primary %} primary{% endif %}" id="imgthumb-{{ img.id }}">
-            <img src="{{ url_for('static', filename='img/products/'+img.image_path) }}">
+            <img src="{{ url_for('static', filename='img/products/'+img.image_path) }}" alt="Mahsulot rasmi {{ loop.index }}">
             {% if img.is_primary %}<div class="img-primary-badge">⭐ ASOSIY</div>{% endif %}
             <div class="img-actions">
               {% if not img.is_primary %}
-              <button type="button" class="img-btn img-set-primary" onclick="setImageAsPrimary({{ img.id }}, this)"
-                title="Asosiy qilish">⭐</button>
+              <button type="button" class="img-btn img-set-primary" data-set-primary-image="{{ img.id }}" title="Asosiy qilish">⭐</button>
               {% endif %}
-              <button type="button" class="img-btn img-del" onclick="deleteImage({{ img.id }}, this)"
-                title="O'chirish">✕</button>
+              <button type="button" class="img-btn img-del" data-delete-image="{{ img.id }}" title="O'chirish">✕</button>
             </div>
           </div>
           {% endfor %}
@@ -152,452 +137,14 @@
         {% endif %}
       </div>
 
-      <div class="form-btn-group" style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+      <div class="form-btn-group product-form-actions">
         <button type="submit" class="btn btn-green">{% if product %}Saqlash{% else %}Qo'shish{% endif %}</button>
         <a href="{{ url_for('admin.products') }}" class="btn btn-outline">Bekor qilish</a>
       </div>
     </form>
   </div>
 </div>
-
-<style>
-  .cat-checkboxes {
-    border: 1px solid var(--a-border);
-    border-radius: 8px;
-    padding: 0.6rem;
-    background: var(--a-input);
-    max-height: 340px;
-    overflow: auto;
-  }
-
-  @media (max-width:700px) {
-    .cat-checkboxes {
-      padding: 0.5rem;
-    }
-
-    .cat-tree-actions {
-      flex-direction: column;
-    }
-
-    .cat-tree-actions .btn {
-      width: 100%;
-    }
-  }
-
-  .cat-group.tree {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .cat-tree-actions {
-    display: flex;
-    gap: 0.45rem;
-    margin-bottom: 0.6rem;
-    position: sticky;
-    top: 0;
-    background: var(--a-input);
-    z-index: 2;
-    padding-bottom: 0.2rem;
-  }
-
-  .cat-check-item {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.36rem 0.55rem;
-    border: 1.5px solid var(--a-border);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: var(--a-white);
-    transition: all 0.15s;
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .cat-check-item:hover {
-    border-color: #5B8C52;
-  }
-
-  .cat-tree-item {
-    margin-left: calc(var(--depth, 0) * 0.9rem);
-  }
-
-  .cat-tree-item.is-hidden {
-    display: none;
-  }
-
-  .cat-tree-toggle {
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    background: transparent;
-    color: var(--a-muted);
-    font-size: 0.75rem;
-    line-height: 1;
-    cursor: pointer;
-    flex: 0 0 18px;
-  }
-
-  .cat-tree-item.no-children .cat-tree-toggle {
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .cat-tree-item.is-collapsed .cat-tree-toggle {
-    transform: rotate(-90deg);
-  }
-
-  .cat-tree-toggle:hover {
-    border-color: rgba(91, 140, 82, 0.4);
-    color: #8ecb86;
-  }
-
-  .cat-tree-prefix {
-    color: var(--a-muted);
-    font-size: 0.75rem;
-  }
-
-  .cat-check-item input[type=checkbox] {
-    accent-color: #5B8C52;
-  }
-
-  .cat-check-item input:checked~span {
-    color: #5B8C52;
-    font-weight: 600;
-  }
-
-  /* Image Grid */
-  .img-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.8rem;
-  }
-
-  .img-thumb {
-    position: relative;
-    border: 2px solid var(--a-border);
-    border-radius: 8px;
-    overflow: hidden;
-    aspect-ratio: 1;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    background: var(--a-input);
-  }
-
-  .img-thumb:hover {
-    border-color: #5B8C52;
-  }
-
-  .img-thumb.primary {
-    border-color: #5B8C52;
-    border-width: 3px;
-  }
-
-  .img-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  .img-primary-badge {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: rgba(91, 140, 82, 0.9);
-    color: #fff;
-    padding: 0.3rem;
-    text-align: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-  }
-
-  .img-actions {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    gap: 0.3rem;
-    padding: 0.4rem;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .img-thumb:hover .img-actions {
-    opacity: 1;
-  }
-
-  .img-btn {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 0.9rem;
-    cursor: pointer;
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    transition: background 0.15s;
-    flex: 1;
-    text-align: center;
-  }
-
-  .img-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .img-set-primary {
-    color: #FFD700;
-  }
-
-  .img-del {
-    color: #ff1f1f;
-  }
-
-  @media(max-width:900px) {
-    .img-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  @media(max-width:600px) {
-    .img-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-</style>
-
-<script>
-  var varIdx = {{ variants| length if variants else 1 }};
-
-  function addVariant() {
-    var row = document.createElement('div');
-    row.className = 'variant-row';
-    row.innerHTML =
-      '<input type="text" name="v_label_' + varIdx + '" placeholder="Variant (100g, 1kg, 250ml)">' +
-      '<input type="number" name="v_price_' + varIdx + '" placeholder="Narx (so\'m)" min="1" step="any">' +
-      '<input type="number" name="v_old_price_' + varIdx + '" placeholder="Eski narx" min="1" step="any">' +
-      '<input type="date" name="v_promo_start_' + varIdx + '" title="Aksiya boshlanish sanasi">' +
-      '<input type="date" name="v_promo_end_' + varIdx + '" title="Aksiya tugash sanasi">' +
-      '<button type="button" class="btn-remove-var" onclick="removeVariant(this)">✕</button>';
-    document.getElementById('variantRows').appendChild(row);
-    varIdx++;
-  }
-
-  function removeVariant(btn) {
-    btn.closest('.variant-row').remove();
-  }
-
-  function setImageAsPrimary(iid, btn) {
-    fetch('/admin/mahsulot-rasm/' + iid + '/asosiy', { method: 'POST' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.success) {
-          refreshPrimaryState(data.primary_id || iid);
-        }
-      })
-      .catch(function () { alert("Xatolik yuz berdi!"); });
-  }
-
-  function deleteImage(iid, btn) {
-    if (!confirm("Rasmni o'chirasizmi?")) return;
-    fetch('/admin/mahsulot-rasm/' + iid + '/ochirish', { method: 'POST' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.success) {
-          alert("O'chirishda xatolik!");
-          return;
-        }
-        var thumb = document.getElementById('imgthumb-' + iid);
-        if (thumb) thumb.remove();
-        refreshPrimaryState(data.primary_id || null);
-      })
-      .catch(function () { alert("O'chirishda xatolik!"); });
-  }
-
-  function ensureSetPrimaryBtn(thumb, id) {
-    var actions = thumb.querySelector('.img-actions');
-    if (!actions) return;
-    var btn = actions.querySelector('.img-set-primary');
-    if (btn) return;
-    var newBtn = document.createElement('button');
-    newBtn.type = 'button';
-    newBtn.className = 'img-btn img-set-primary';
-    newBtn.title = 'Asosiy qilish';
-    newBtn.textContent = '⭐';
-    newBtn.onclick = function () { setImageAsPrimary(id, this); };
-    actions.insertBefore(newBtn, actions.firstChild);
-  }
-
-  function refreshPrimaryState(primaryId) {
-    var thumbs = document.querySelectorAll('.img-thumb');
-    thumbs.forEach(function (thumb) {
-      var id = parseInt((thumb.id || '').replace('imgthumb-', ''));
-      var isPrimary = primaryId && id === parseInt(primaryId);
-      var badge = thumb.querySelector('.img-primary-badge');
-      var setBtn = thumb.querySelector('.img-set-primary');
-      if (isPrimary) {
-        thumb.classList.add('primary');
-        if (!badge) {
-          badge = document.createElement('div');
-          badge.className = 'img-primary-badge';
-          badge.textContent = '⭐ ASOSIY';
-          thumb.insertBefore(badge, thumb.firstChild.nextSibling);
-        }
-        if (setBtn) setBtn.remove();
-      } else {
-        thumb.classList.remove('primary');
-        if (badge) badge.remove();
-        ensureSetPrimaryBtn(thumb, id);
-      }
-    });
-  }
-
-  function updateUnitHint() {
-    var typeEl = document.getElementById('unitTypeSelect');
-    var hint = document.getElementById('unitTypeHint');
-    if (!typeEl || !hint) return;
-    var type = typeEl.value;
-    if (type === 'kg') {
-      hint.textContent = 'Kilogramm rejimida variant narxlari 1kg uchun kiritiladi.';
-    } else {
-      hint.textContent = 'Dona rejimida variant narxlari dona bo\'yicha yuritiladi.';
-    }
-  }
-  updateUnitHint();
-
-  (function setupCategoryTree() {
-    var items = Array.from(document.querySelectorAll('.cat-tree-item'));
-    if (!items.length) return;
-
-    var byId = new Map();
-    var childrenByParent = new Map();
-
-    items.forEach(function (item) {
-      var id = item.getAttribute('data-cat-id') || '';
-      var parentId = item.getAttribute('data-parent-id') || '';
-      if (!id) return;
-      byId.set(id, item);
-      if (!childrenByParent.has(parentId)) {
-        childrenByParent.set(parentId, []);
-      }
-      childrenByParent.get(parentId).push(item);
-    });
-
-    var hasNested = items.some(function (item) {
-      var id = item.getAttribute('data-cat-id') || '';
-      return (childrenByParent.get(id) || []).length > 0;
-    });
-    if (!hasNested) {
-      var treeActions = document.querySelector('.cat-tree-actions');
-      if (treeActions) treeActions.style.display = 'none';
-    }
-
-    function updateCheckBorder(cb) {
-      var row = cb.closest('.cat-check-item');
-      if (!row) return;
-      row.style.borderColor = cb.checked ? '#5B8C52' : '';
-    }
-
-    function setExpandedState(item, expanded) {
-      if (!item || item.classList.contains('no-children')) return;
-      item.classList.toggle('is-collapsed', !expanded);
-      var btn = item.querySelector('.cat-tree-toggle');
-      if (btn) btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    }
-
-    function isAncestorCollapsed(item) {
-      var parentId = item.getAttribute('data-parent-id') || '';
-      while (parentId) {
-        var parent = byId.get(parentId);
-        if (!parent) return false;
-        if (parent.classList.contains('is-collapsed')) return true;
-        parentId = parent.getAttribute('data-parent-id') || '';
-      }
-      return false;
-    }
-
-    function refreshTreeVisibility() {
-      items.forEach(function (item) {
-        item.classList.toggle('is-hidden', isAncestorCollapsed(item));
-      });
-    }
-
-    function openAncestors(item) {
-      var parentId = item.getAttribute('data-parent-id') || '';
-      while (parentId) {
-        var parent = byId.get(parentId);
-        if (!parent) break;
-        setExpandedState(parent, true);
-        parentId = parent.getAttribute('data-parent-id') || '';
-      }
-    }
-
-    items.forEach(function (item) {
-      var id = item.getAttribute('data-cat-id') || '';
-      var children = childrenByParent.get(id) || [];
-      var hasChildren = children.length > 0;
-      item.classList.toggle('no-children', !hasChildren);
-      if (hasChildren) {
-        // Default holatda faqat yuqori darajadagilar ko'rinsin.
-        setExpandedState(item, false);
-      }
-
-      var cb = item.querySelector('input[type="checkbox"]');
-      if (cb) {
-        updateCheckBorder(cb);
-        cb.addEventListener('change', function () {
-          updateCheckBorder(cb);
-          if (cb.checked) {
-            openAncestors(item);
-            refreshTreeVisibility();
-          }
-        });
-      }
-
-      var toggleBtn = item.querySelector('.cat-tree-toggle');
-      if (!toggleBtn) return;
-      toggleBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (item.classList.contains('no-children')) return;
-        setExpandedState(item, item.classList.contains('is-collapsed'));
-        refreshTreeVisibility();
-      });
-    });
-
-    var expandBtn = document.getElementById('catExpandAllBtn');
-    var collapseBtn = document.getElementById('catCollapseAllBtn');
-
-    if (expandBtn) {
-      expandBtn.addEventListener('click', function () {
-        items.forEach(function (item) {
-          if (!item.classList.contains('no-children')) setExpandedState(item, true);
-        });
-        refreshTreeVisibility();
-      });
-    }
-
-    if (collapseBtn) {
-      collapseBtn.addEventListener('click', function () {
-        items.forEach(function (item) {
-          if (!item.classList.contains('no-children')) setExpandedState(item, false);
-        });
-        refreshTreeVisibility();
-      });
-    }
-
-    items.forEach(function (item) {
-      var cb = item.querySelector('input[type="checkbox"]');
-      if (cb && cb.checked) openAncestors(item);
-    });
-
-    refreshTreeVisibility();
-  })();
-</script>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/product-form.js') }}"></script>
 {% endblock %}

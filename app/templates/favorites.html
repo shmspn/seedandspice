@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Sevimlilar — NaturMart{% endblock %}
 {% block content %}
-<div class="fav-wrap">
-  <div style="text-align:center; margin-bottom:1.5rem;">
-    <h3 style="font-family:'Fraunces',serif;color:var(--brown);">Istaklarim</h3>
+<div class="fav-wrap"
+     id="favoritesPage"
+     data-favorite-keys='{{ favorite_keys|tojson|forceescape }}'
+     data-add-url="{{ url_for('main.favorites_add') }}"
+     data-remove-url="{{ url_for('main.favorites_remove') }}">
+  <div class="favorites-header">
+    <h3 class="favorites-title">Sevimlilar</h3>
+    <p class="favorites-subtitle">Sizda <span id="favoritesCount">{{ items|length }}</span> ta mahsulot saqlangan</p>
   </div>
 
   {% if items %}
@@ -36,14 +41,15 @@
 
       <button class="pcard-favorite favorite-btn active"
               type="button"
-              onclick="removeFavorite('{{ item['key'] }}', this)"
+              data-remove-favorite
+              data-favorite-key="{{ item['key'] }}"
               aria-label="Sevimlidan o'chirish">❤</button>
 
       <div class="pcard-bottom">
         <div class="pcard-footer">
           <div>
             <div class="pcard-price" id="price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
-            <div class="pcard-old" id="old-{{ card_key }}" {% if not (initial_old and initial_old > initial_price) %}style="display:none;"{% endif %}>
+            <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="old-{{ card_key }}">
               {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
             </div>
           </div>
@@ -53,11 +59,12 @@
         <div class="pcard-variants">
           {% for v in item['variants'] %}
           <button class="pcard-vbtn{% if (selected_vid and selected_vid == v['id']) or (not selected_vid and loop.first) %} active{% endif %}"
+                  type="button"
+                  data-select-variant
                   data-price="{{ v['price'] }}"
                   data-card-key="{{ card_key }}"
                   data-vid="{{ v['id'] }}"
-                  data-old-price="{{ v['old_price'] if v['old_price'] else (item['old_price'] if item['old_price'] else '') }}"
-                  onclick="selectVariant(this)">{{ v['label'] }}</button>
+                  data-old-price="{{ v['old_price'] if v['old_price'] else (item['old_price'] if item['old_price'] else '') }}">{{ v['label'] }}</button>
           {% endfor %}
         </div>
         {% endif %}
@@ -66,10 +73,10 @@
     {% endfor %}
   </div>
   {% else %}
-  <div id="favoritesEmpty" style="text-align:center;padding:5rem 2rem;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);">
-    <p style="font-size:4rem;margin-bottom:1rem;">❤️</p>
-    <h2 style="font-family:'Fraunces',serif;color:var(--brown);margin-bottom:0.5rem;">Sevimlilar bo'sh</h2>
-    <p style="color:var(--muted);margin-bottom:2rem;">Yoqtirgan mahsulotlaringizni shu yerga qo'shing.</p>
+  <div id="favoritesEmpty" class="favorites-empty-state">
+    <p class="favorites-empty-icon">❤️</p>
+    <h2 class="favorites-empty-title">Sevimlilar bo'sh</h2>
+    <p class="favorites-empty-copy">Yoqtirgan mahsulotlaringizni shu yerga qo'shing.</p>
     <a href="{{ url_for('main.catalog') }}" class="btn btn-primary">Katalogga o'tish</a>
   </div>
   {% endif %}
@@ -102,7 +109,7 @@
         <button class="pcard-favorite favorite-btn popular-fav-btn{% if initial_key in favorite_keys %} active{% endif %}"
                 type="button"
                 data-pid="{{ p['id'] }}"
-                onclick="togglePopularFavorite(this)"
+                data-toggle-popular-favorite
                 aria-label="{% if initial_key in favorite_keys %}Sevimlida{% else %}Sevimliga qo'shish{% endif %}">
           {% if initial_key in favorite_keys %}❤{% else %}♡{% endif %}
         </button>
@@ -111,7 +118,7 @@
           <div class="pcard-footer">
             <div>
               <div class="pcard-price" id="price-{{ card_key }}">{{ "{:,.0f}".format(initial_price) }} so'm</div>
-              <div class="pcard-old" id="old-{{ card_key }}" {% if not (initial_old and initial_old > initial_price) %}style="display:none;"{% endif %}>
+              <div class="pcard-old{% if not (initial_old and initial_old > initial_price) %} is-hidden{% endif %}" id="old-{{ card_key }}">
                 {% if initial_old %}{{ "{:,.0f}".format(initial_old) }} so'm{% endif %}
               </div>
             </div>
@@ -121,11 +128,12 @@
           <div class="pcard-variants">
             {% for v in p['variants'] %}
             <button class="pcard-vbtn{% if loop.first %} active{% endif %}"
+                    type="button"
+                    data-select-variant
                     data-price="{{ v['price'] }}"
                     data-card-key="{{ card_key }}"
                     data-vid="{{ v['id'] }}"
-                    data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}"
-                    onclick="selectVariant(this)">{{ v['label'] }}</button>
+                    data-old-price="{{ v['old_price'] if v['old_price'] else (p['old_price'] if p['old_price'] else '') }}">{{ v['label'] }}</button>
             {% endfor %}
           </div>
           {% endif %}
@@ -136,122 +144,7 @@
   </section>
   {% endif %}
 </div>
-
-<script>
-var favoriteKeys = new Set({{ favorite_keys|tojson }});
-
-function setFavoriteBadges(count){
-  var badge = document.getElementById('favoriteBadge');
-  if(badge){
-    if(count > 0) badge.textContent = count;
-    else badge.remove();
-  }
-
-  var badgeMobile = document.getElementById('favoriteBadgeMobile');
-  if(badgeMobile){
-    if(count > 0) badgeMobile.textContent = count;
-    else badgeMobile.remove();
-  }
-}
-
-function setFavoriteBtnState(btn, active){
-  if(!btn) return;
-  btn.classList.toggle('active', !!active);
-  btn.textContent = active ? '❤' : '♡';
-  btn.setAttribute('aria-label', active ? "Sevimlida" : "Sevimliga qo'shish");
-}
-
-function updateCardOldPrice(cardKey, price, oldPrice){
-  var oldEl = document.getElementById('old-' + cardKey);
-  var hasOld = oldPrice && oldPrice > price;
-  if(oldEl){
-    if(hasOld){
-      oldEl.style.display = 'block';
-      oldEl.textContent = Math.round(oldPrice).toLocaleString('uz-UZ', {maximumFractionDigits:0}) + ' so\'m';
-    } else {
-      oldEl.style.display = 'none';
-    }
-  }
-}
-
-function selectVariant(btn){
-  var wrap = btn.closest('.pcard-variants');
-  if(!wrap) return;
-  wrap.querySelectorAll('.pcard-vbtn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-
-  var price = parseFloat(btn.dataset.price);
-  var oldPrice = parseFloat(btn.dataset.oldPrice);
-  var cardKey = btn.dataset.cardKey;
-  var el = document.getElementById('price-' + cardKey);
-  if(el) el.textContent = price.toLocaleString('uz-UZ', {maximumFractionDigits:0}) + ' so\'m';
-  updateCardOldPrice(cardKey, price, oldPrice);
-}
-
-function removeFavorite(key, btn){
-  fetch('{{ url_for("main.favorites_remove") }}', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({key: key})
-  }).then(function(r){ return r.json(); }).then(function(data){
-    if(!data.success) return;
-
-    favoriteKeys.delete(String(key));
-    var card = document.getElementById('favorite-' + key);
-    if(card) card.remove();
-    document.querySelectorAll('.popular-fav-btn[data-pid="' + key + '"]').forEach(function(popBtn){
-      setFavoriteBtnState(popBtn, false);
-    });
-
-    var count = data.favorites_count || 0;
-    var cnt = document.getElementById('favoritesCount');
-    if(cnt) cnt.textContent = count;
-    setFavoriteBadges(count);
-
-    if(count === 0){
-      window.location.reload();
-    }
-  });
-}
-
-function togglePopularFavorite(btn){
-  var pid = btn && btn.dataset ? btn.dataset.pid : '';
-  if(!pid) return;
-
-  var key = String(pid);
-  var isActive = favoriteKeys.has(key);
-  var url = isActive ? '{{ url_for("main.favorites_remove") }}' : '{{ url_for("main.favorites_add") }}';
-
-  var vid = null;
-  if(!isActive){
-    var card = btn.closest('.pcard');
-    var activeVariant = card ? card.querySelector('.pcard-vbtn.active') : null;
-    if(activeVariant && activeVariant.dataset.vid) vid = Number(activeVariant.dataset.vid);
-  }
-  var payload = isActive ? {key: key} : {product_id: Number(pid), variant_id: vid};
-
-  fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  }).then(function(r){ return r.json(); }).then(function(data){
-    if(!data.success) return;
-
-    if(isActive){
-      favoriteKeys.delete(key);
-      var favCard = document.getElementById('favorite-' + key);
-      if(favCard) favCard.remove();
-    } else {
-      favoriteKeys.add(data.key || key);
-    }
-
-    setFavoriteBtnState(btn, !isActive);
-    setFavoriteBadges(data.favorites_count || favoriteKeys.size);
-
-    if(!isActive || ((data.favorites_count || 0) === 0)){
-      window.location.reload();
-    }
-  });
-}
-</script>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pages/favorites.js') }}"></script>
 {% endblock %}

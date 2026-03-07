@@ -2,18 +2,21 @@
 {% block title %}Mahsulotlar — Admin{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h1 class="page-title">Mahsulotlar <span style="color:var(--a-muted);font-size:0.9rem;font-family:'DM Sans';">{{ total }} ta</span></h1>
+  <h1 class="page-title">Mahsulotlar <span class="page-title-meta">{{ total }} ta</span></h1>
   <a href="{{ url_for('admin.add_product') }}" class="btn btn-green">+ Qo'shish</a>
 </div>
 <div class="admin-content">
   <!-- Filter -->
-  <form method="GET" id="filterForm" class="filter-form">
-    <input name="q" value="{{ q }}" placeholder="Qidirish..." style="padding:0.55rem 1rem;border:1.5px solid var(--a-border);border-radius:8px;background:var(--a-input);color:var(--a-text);font-size:0.85rem;outline:none;flex:1;min-width:150px;">
+  <form method="GET"
+        id="filterForm"
+        class="filter-form"
+        data-all-categories='{{ cats|tojson|forceescape }}'
+        data-types-map='{{ types_map|tojson|forceescape }}'>
+    <input name="q" value="{{ q }}" placeholder="Qidirish..." class="admin-form-control admin-search-input">
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px ">
+    <div class="admin-grid-2">
       <!-- Tur select -->
-      <select name="tip" id="tipSelect" onchange="onTipChange(this.value)"
-        style="padding:0.55rem 1rem;border:1.5px solid var(--a-border);border-radius:8px;background:var(--a-input);color:var(--a-text);font-size:0.85rem;outline:none;">
+      <select name="tip" id="tipSelect" class="admin-form-control">
         <option value="" {% if not tip %}selected{% endif %}>Barcha turlar</option>
         {% for t in type_options %}
         <option value="{{ t }}" {% if tip==t %}selected{% endif %}>{{ t }}</option>
@@ -21,8 +24,7 @@
       </select>
   
       <!-- Kategoriya select (turga qarab filtered) -->
-      <select name="cat" id="catSelect"
-        style="padding:0.55rem 1rem;border:1.5px solid var(--a-border);border-radius:8px;background:var(--a-input);color:var(--a-text);font-size:0.85rem;outline:none;">
+      <select name="cat" id="catSelect" class="admin-form-control">
         <option value="">Barcha kategoriyalar</option>
         {% for c in cats %}
         <option value="{{ c['id'] }}" {% if active_cat==c['id']|string %}selected{% endif %}>{{ c['icon'] }} {{ c['name'] }}</option>
@@ -30,34 +32,11 @@
       </select>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px ">
+    <div class="admin-grid-2">
       <a href="{{ url_for('admin.products') }}" class="btn btn-outline">Tozalash</a>
       <button type="submit" class="btn btn-green">Qidirish</button>
     </div>
   </form>
-
-  <script>
-  // All categories grouped by type (passed from backend via JS object)
-  var typesMap = {
-    '': [{% for c in cats %}{id:'{{ c['id'] }}', icon:'{{ c['icon'] }}', name:'{{ c['name'] }}'}{% if not loop.last %},{% endif %}{% endfor %}],
-    {% for t, tlist in types_map.items() %}
-    '{{ t }}': [{% for c in tlist %}{id:'{{ c['id'] }}', icon:'{{ c['icon'] }}', name:'{{ c['name'] }}'}{% if not loop.last %},{% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
-    {% endfor %}
-  };
-  function onTipChange(tip) {
-    // Reset category
-    var catSel = document.getElementById('catSelect');
-    catSel.innerHTML = '<option value="">Barcha kategoriyalar</option>';
-    var list = tip ? (typesMap[tip] || []) : (typesMap[''] || []);
-    list.forEach(function(c){
-      var opt = document.createElement('option');
-      opt.value = c.id; opt.textContent = c.icon + ' ' + c.name;
-      catSel.appendChild(opt);
-    });
-    // Auto-submit to reload with new tip
-    document.getElementById('filterForm').submit();
-  }
-  </script>
 
   <div class="card">
     <table>
@@ -70,13 +49,13 @@
           <td>
             {% if p.image %}
             <img src="{{ url_for('static', filename='img/products/'+p.image) }}" class="table-thumb" alt="{{ p.name }}">
-            {% else %}<span style="font-size:1.8rem;">🌿</span>{% endif %}
+            {% else %}<span class="admin-icon-cell">🌿</span>{% endif %}
           </td>
           <td>
-            <div style="font-weight:500;">{{ p.name }}</div>
+            <div class="admin-table-strong">{{ p.name }}</div>
           </td>
-          <td style="color:var(--a-muted);font-size:0.85rem;">{{ p.cat_name or '—' }}</td>
-          <td style="font-family:'Fraunces',serif;">{{ "{:,.0f}".format(p.price) }} so'm</td>
+          <td class="admin-table-muted">{{ p.cat_name or '—' }}</td>
+          <td class="admin-price-cell">{{ "{:,.0f}".format(p.price) }} so'm</td>
           <td>
             {% if p.is_active %}
             <span class="status status-qabul">Faol</span>
@@ -85,27 +64,30 @@
             {% endif %}
           </td>
           <td>
-            <div style="display: flex; gap:10px">
+            <div class="table-actions">
               <a href="{{ url_for('admin.edit_product', pid=p.id) }}" class="btn btn-outline btn-sm">Tahrirlash</a>
-              <form method="POST" action="{{ url_for('admin.delete_product', pid=p.id) }}" onsubmit="return confirm('O\'chirasizmi?')">
+              <form method="POST" action="{{ url_for('admin.delete_product', pid=p.id) }}" data-confirm="O'chirasizmi?">
                 <button type="submit" class="btn btn-red btn-sm">O'chirish</button>
               </form>
             </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--a-muted);">Mahsulot topilmadi</td></tr>
+        <tr><td colspan="6" class="admin-empty-row">Mahsulot topilmadi</td></tr>
         {% endfor %}
       </tbody>
     </table>
     {% if total_pages > 1 %}
-    <div style="display:flex;gap:0.4rem;justify-content:center;margin-top:1.5rem;">
+    <div class="admin-pagination">
       {% for pg in range(1, total_pages+1) %}
       <a href="{{ url_for('admin.products', q=q, cat=active_cat, page=pg) }}"
-         style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1.5px solid var(--a-border);font-size:0.82rem;{% if pg==page %}background:var(--a-green);border-color:var(--a-green);color:#fff;{% endif %}">{{ pg }}</a>
+         class="admin-pagination-link{% if pg==page %} active{% endif %}">{{ pg }}</a>
       {% endfor %}
     </div>
     {% endif %}
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/products.js') }}"></script>
 {% endblock %}

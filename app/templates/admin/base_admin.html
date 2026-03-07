@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% block extra_css %}{% endblock %}
 </head>
 <body>
 <div class="mobile-admin-bar">
@@ -23,7 +24,7 @@
       <button type="button" class="sidebar-close-btn" id="adminMenuClose" aria-label="Menyuni yopish">✕</button>
     </div>
     <div class="sidebar-logo">
-      <span style="font-size:1.3rem">🌿</span>
+      <span class="admin-sidebar-icon">🌿</span>
       <span class="sidebar-logo-text">Natur<em>Mart</em></span>
     </div>
     <nav class="sidebar-nav">
@@ -80,43 +81,7 @@
   </div>
 
 </div>
-<script>
-(function () {
-  var body = document.body;
-  var openBtn = document.getElementById('adminMenuOpen');
-  var closeBtn = document.getElementById('adminMenuClose');
-  var backdrop = document.getElementById('sidebarBackdrop');
-
-  if (!openBtn || !backdrop) return;
-
-  function openMenu() {
-    body.classList.add('sidebar-open');
-    openBtn.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeMenu() {
-    body.classList.remove('sidebar-open');
-    openBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  openBtn.addEventListener('click', openMenu);
-  if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-  backdrop.addEventListener('click', closeMenu);
-
-  document.querySelectorAll('.sidebar .nav-link, .sidebar-footer a').forEach(function (el) {
-    el.addEventListener('click', function () {
-      if (window.matchMedia('(max-width: 1100px)').matches) closeMenu();
-    });
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeMenu();
-  });
-
-  window.addEventListener('resize', function () {
-    if (window.innerWidth > 1100) closeMenu();
-  });
-})();
-</script>
+<script src="{{ url_for('static', filename='js/admin/base.js') }}"></script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

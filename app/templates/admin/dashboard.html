@@ -56,9 +56,9 @@
           {% for c in recent_collections %}
           <tr>
             <td>
-              <div style="font-weight:600;">{{ c.name }}</div>
+              <div class="admin-table-strong">{{ c.name }}</div>
             </td>
-            <td style="font-size:0.8rem;color:var(--a-muted);">/katalog?collection={{ c.slug }}</td>
+            <td class="admin-table-small admin-table-muted">/katalog?collection={{ c.slug }}</td>
             <td>{{ c.prod_count }} ta</td>
             <td>
               {% if c.is_active %}
@@ -72,7 +72,7 @@
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--a-muted);">Kolleksiyalar yo'q</td></tr>
+          <tr><td colspan="5" class="admin-empty-row admin-empty-row-compact">Kolleksiyalar yo'q</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -116,7 +116,7 @@
             </div>
           </div>
           {% else %}
-          <p style="color:var(--a-muted);font-size:0.85rem;">Bannerlar yo'q</p>
+          <p class="dash-empty-note">Bannerlar yo'q</p>
           {% endfor %}
         </div>
       </div>
@@ -137,7 +137,7 @@
             </div>
           </div>
           {% else %}
-          <p style="color:var(--a-muted);font-size:0.85rem;">Ma'lumot yo'q</p>
+          <p class="dash-empty-note">Ma'lumot yo'q</p>
           {% endfor %}
         </div>
       </div>

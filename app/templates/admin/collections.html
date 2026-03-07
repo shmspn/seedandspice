@@ -22,17 +22,16 @@
         {% for c in collections %}
         <tr>
           <td>
-            <div style="font-weight:600;">{{ c.name }}</div>
-            <!-- <div style="font-size:0.78rem;color:var(--a-muted);">{{ c.slug }}</div> -->
+            <div class="admin-table-strong">{{ c.name }}</div>
           </td>
-          <td style="font-size:0.8rem;">
+          <td class="admin-table-small">
             <button type="button"
                     class="btn btn-outline btn-sm copy-collection-link"
                     data-link="{{ url_for('main.catalog', collection=c.slug) }}">
               /katalog?collection={{ c.slug }}
             </button>
           </td>
-          <td style="font-size:0.82rem;color:var(--a-muted);">
+          <td class="admin-table-small admin-table-muted">
             {% if c.start_date or c.end_date %}
               {{ c.start_date or '…' }} — {{ c.end_date or '…' }}
             {% else %}
@@ -48,55 +47,22 @@
             {% endif %}
           </td>
           <td>
-            <div style="display:flex;gap:10px;">
+            <div class="table-actions">
               <a href="{{ url_for('admin.edit_collection', cid=c.id) }}" class="btn btn-outline btn-sm">Tahrirlash</a>
-              <form method="POST" action="{{ url_for('admin.delete_collection', cid=c.id) }}" onsubmit="return confirm('Kolleksiya o\\'chirilsinmi?')">
+              <form method="POST" action="{{ url_for('admin.delete_collection', cid=c.id) }}" data-confirm="Kolleksiya o'chirilsinmi?">
                 <button type="submit" class="btn btn-red btn-sm">O'chirish</button>
               </form>
             </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" style="text-align:center;padding:2.2rem;color:var(--a-muted);">Kolleksiyalar yo'q</td></tr>
+        <tr><td colspan="6" class="admin-empty-row">Kolleksiyalar yo'q</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
-<script>
-(function(){
-  function fallbackCopy(text){
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.setAttribute('readonly', '');
-    ta.style.position = 'absolute';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  }
-
-  document.querySelectorAll('.copy-collection-link').forEach(function(btn){
-    btn.addEventListener('click', async function(){
-      var link = btn.getAttribute('data-link') || '';
-      if(!link) return;
-
-      try {
-        if(navigator.clipboard && navigator.clipboard.writeText){
-          await navigator.clipboard.writeText(link);
-        } else {
-          fallbackCopy(link);
-        }
-      } catch(e){
-        fallbackCopy(link);
-      }
-
-      var original = btn.textContent;
-      btn.textContent = 'Nusxalandi';
-      setTimeout(function(){ btn.textContent = original; }, 1200);
-    });
-  });
-})();
-</script>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/collections.js') }}"></script>
 {% endblock %}

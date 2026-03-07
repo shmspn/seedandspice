@@ -6,7 +6,7 @@
   <a href="{{ url_for('admin.banners') }}" class="btn btn-outline">← Orqaga</a>
 </div>
 <div class="admin-content">
-  <div class="card" style="max-width:760px;">
+  <div class="card admin-card-md">
     <form method="POST" enctype="multipart/form-data">
       <div class="form-grid">
         <div class="form-group full">
@@ -19,13 +19,13 @@
         </div>
         <div class="form-group">
           <label>Kolleksiya</label>
-          <select name="collection_id" id="collectionSelect" style="padding:0.55rem 1rem;border:1.5px solid var(--a-border);border-radius:8px;background:var(--a-input);color:var(--a-text);font-size:0.85rem;outline:none;width:100%;">
+          <select name="collection_id" id="collectionSelect" class="admin-form-control">
             <option value="">Qo'lda link beraman</option>
             {% for c in collections %}
             <option value="{{ c.id }}" {% if banner and banner.collection_id == c.id %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
           </select>
-          <div style="font-size:0.74rem;color:var(--a-muted);margin-top:0.3rem;">Kolleksiya tanlansa link avtomatik bo'ladi.</div>
+          <div class="admin-helper-text">Kolleksiya tanlansa link avtomatik bo'ladi.</div>
         </div>
         <div class="form-group">
           <label>Qo'lda havola (ixtiyoriy)</label>
@@ -35,8 +35,8 @@
           <label>Tartib raqami</label>
           <input type="number" name="sort_order" value="{{ banner.sort_order if banner else 0 }}" placeholder="0">
         </div>
-        <div class="form-group" style="display:flex;align-items:flex-end;">
-          <label class="check-label" style="margin:0 0 0.5rem;">
+        <div class="form-group admin-align-end">
+          <label class="check-label admin-check-label-tight">
             <input type="checkbox" name="is_active" {% if not banner or banner.is_active %}checked{% endif %}> Faol
           </label>
         </div>
@@ -48,37 +48,22 @@
       </div>
 
       {% if banner and banner.image_path %}
-      <div style="margin:0.5rem 0 1.2rem;">
-        <div style="font-size:0.78rem;color:var(--a-muted);margin-bottom:0.45rem;">Joriy rasm</div>
+      <div class="banner-preview-wrap">
+        <div class="banner-preview-label">Joriy rasm</div>
         <img src="{{ url_for('static', filename='img/banners/' + banner.image_path) }}"
              alt="{{ banner.title }}"
-             style="width:100%;max-width:420px;border-radius:10px;border:1px solid var(--a-border);display:block;">
+             class="banner-preview-image">
       </div>
       {% endif %}
 
-      <div style="display:flex;gap:0.75rem;">
+      <div class="form-btn-group">
         <button type="submit" class="btn btn-green">{% if banner %}Saqlash{% else %}Qo'shish{% endif %}</button>
         <a href="{{ url_for('admin.banners') }}" class="btn btn-outline">Bekor qilish</a>
       </div>
     </form>
   </div>
 </div>
-<script>
-(function(){
-  var select = document.getElementById('collectionSelect');
-  var linkInput = document.getElementById('manualLinkInput');
-  if(!select || !linkInput) return;
-  function sync(){
-    var hasCollection = !!select.value;
-    linkInput.disabled = hasCollection;
-    if(hasCollection){
-      linkInput.placeholder = "Kolleksiya tanlangan — avtomatik link ishlaydi";
-    } else {
-      linkInput.placeholder = "/katalog yoki https://...";
-    }
-  }
-  select.addEventListener('change', sync);
-  sync();
-})();
-</script>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/banner-form.js') }}"></script>
 {% endblock %}

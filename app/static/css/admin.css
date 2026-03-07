@@ -28,6 +28,10 @@ body {
   min-height: 100vh;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -82,6 +86,10 @@ textarea {
   align-items: center;
   gap: 0.5rem;
   border-bottom: 1px solid var(--a-border);
+}
+
+.admin-sidebar-icon {
+  font-size: 1.3rem;
 }
 
 .sidebar-logo-text {
@@ -167,6 +175,12 @@ textarea {
 .page-title {
   font-size: 1.4rem;
   color: var(--a-white);
+}
+
+.page-title-meta {
+  color: var(--a-muted);
+  font-size: 0.9rem;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .admin-content {
@@ -317,6 +331,177 @@ tr:hover td {
 .btn-sm {
   padding: 0.3rem 0.7rem;
   font-size: 0.75rem;
+}
+
+.form-btn-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.admin-form-control {
+  width: 100%;
+  padding: 0.55rem 1rem;
+  border: 1.5px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-input);
+  color: var(--a-text);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.admin-form-control:focus {
+  border-color: var(--a-green);
+}
+
+.admin-search-input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.admin-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-card-sm {
+  max-width: 400px;
+}
+
+.admin-card-md {
+  max-width: 760px;
+}
+
+.admin-card-lg {
+  max-width: 1080px;
+}
+
+.admin-align-end {
+  display: flex;
+  align-items: flex-end;
+}
+
+.admin-check-label-tight {
+  margin: 0 0 0.5rem;
+}
+
+.admin-helper-text {
+  font-size: 0.74rem;
+  color: var(--a-muted);
+  margin-top: 0.3rem;
+}
+
+.banner-preview-wrap {
+  margin: 0.5rem 0 1.2rem;
+}
+
+.banner-preview-label {
+  font-size: 0.78rem;
+  color: var(--a-muted);
+  margin-bottom: 0.45rem;
+}
+
+.banner-preview-image {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 10px;
+  border: 1px solid var(--a-border);
+  display: block;
+}
+
+.admin-table-strong {
+  font-weight: 600;
+}
+
+.admin-table-muted {
+  color: var(--a-muted);
+  font-size: 0.85rem;
+}
+
+.admin-table-small {
+  font-size: 0.82rem;
+}
+
+.admin-price-cell {
+  font-family: 'Fraunces', serif;
+}
+
+.admin-icon-cell {
+  font-size: 1.5rem;
+}
+
+.table-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-empty-row {
+  text-align: center;
+  padding: 2.2rem;
+  color: var(--a-muted);
+}
+
+.admin-empty-row-compact {
+  padding: 1.5rem;
+}
+
+.admin-pagination {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.admin-pagination-link {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1.5px solid var(--a-border);
+  font-size: 0.82rem;
+}
+
+.admin-pagination-link.active {
+  background: var(--a-green);
+  border-color: var(--a-green);
+  color: #fff;
+}
+
+.admin-soft-badge {
+  font-size: 0.75rem;
+  background: rgba(91, 161, 85, 0.15);
+  color: var(--a-green);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.admin-banner-icon {
+  font-size: 1.3rem;
+}
+
+.admin-link-column {
+  min-width: 170px;
+}
+
+.admin-link-primary {
+  font-weight: 600;
+  color: var(--a-white);
+}
+
+.admin-link-secondary {
+  margin-top: 0.2rem;
+}
+
+.admin-break-word {
+  word-break: break-all;
+}
+
+.dash-empty-note {
+  color: var(--a-muted);
+  font-size: 0.85rem;
 }
 
 /* Forms */
@@ -597,6 +782,32 @@ tr:hover td {
 .login-logo {
   text-align: center;
   margin-bottom: 2rem;
+}
+
+.login-logo-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.login-logo-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.5rem;
+  color: var(--a-white);
+}
+
+.login-logo-subtitle {
+  font-size: 0.8rem;
+  color: var(--a-muted);
+  margin-top: 0.3rem;
+}
+
+.login-flash {
+  margin-bottom: 1rem;
+}
+
+.login-submit {
+  width: 100%;
+  padding: 0.75rem;
 }
 
 .dash-card {
@@ -920,9 +1131,9 @@ tr:hover td {
 }
 
 @media (max-width: 900px) {
-  .cat-group.tree {
+  /* .cat-group.tree {
     flex-direction: column;
-  }
+  } */
 }
 
 @media (max-width: 700px) {
@@ -999,7 +1210,7 @@ tr:hover td {
     margin-bottom: 1.2rem;
   }
 
-  .login-logo div:first-child {
+  .login-logo-icon {
     font-size: 2rem !important;
   }
 
@@ -1021,5 +1232,11 @@ tr:hover td {
 
   .form-btn-group .btn {
     width: 50%
+  }
+}
+
+@media (max-width:480px) {
+  .table-actions{
+    flex-wrap: wrap;
   }
 }

@@ -1,5 +1,8 @@
 {% extends 'admin/base_admin.html' %}
 {% block title %}{% if collection %}Kolleksiya tahrirlash{% else %}Yangi kolleksiya{% endif %} — Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/collection-form.css') }}">
+{% endblock %}
 {% block content %}
 <div class="topbar">
   <h1 class="page-title">{% if collection %}Kolleksiya tahrirlash{% else %}Yangi kolleksiya{% endif %}</h1>
@@ -29,8 +32,8 @@
           <label>Tartib raqami</label>
           <input type="number" name="sort_order" value="{{ collection.sort_order if collection else 0 }}" placeholder="0">
         </div>
-        <div class="form-group" style="display:flex;align-items:flex-end;">
-          <label class="check-label" style="margin:0 0 0.5rem;">
+        <div class="form-group collection-form-flag">
+          <label class="check-label collection-form-check-label">
             <input type="checkbox" name="is_active" {% if not collection or collection.is_active %}checked{% endif %}> Faol
           </label>
         </div>
@@ -40,10 +43,10 @@
         </div>
       </div>
 
-      <div style="border-top:1px solid var(--a-border);padding-top:1rem;margin-top:0.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.7rem;">
-          <label style="font-size:0.82rem;font-weight:600;color:var(--a-muted);text-transform:uppercase;letter-spacing:0.5px;">Mahsulotlar</label>
-          <input id="collectionProductSearch" type="text" placeholder="Mahsulot qidirish..." style="padding:0.5rem 0.8rem;border:1.5px solid var(--a-border);border-radius:8px;background:var(--a-input);color:var(--a-text);font-size:0.82rem;min-width:220px;">
+      <div class="collection-form-products-section">
+        <div class="collection-form-products-head">
+          <label class="collection-form-products-label">Mahsulotlar</label>
+          <input id="collectionProductSearch" type="text" placeholder="Mahsulot qidirish..." class="collection-form-search">
         </div>
         <div class="collection-products">
           {% for p in products %}
@@ -63,67 +66,14 @@
         </div>
       </div>
 
-      <div style="display:flex;gap:0.75rem;margin-top:1.4rem;">
+      <div class="form-btn-group collection-form-actions">
         <button type="submit" class="btn btn-green">{% if collection %}Saqlash{% else %}Qo'shish{% endif %}</button>
         <a href="{{ url_for('admin.collections') }}" class="btn btn-outline">Bekor qilish</a>
       </div>
     </form>
   </div>
 </div>
-
-<style>
-.collection-products{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-  gap:0.6rem;
-  max-height:340px;
-  overflow:auto;
-  padding-right:0.2rem;
-}
-.collection-product-item{
-  display:flex;
-  align-items:center;
-  gap:0.55rem;
-  border:1.5px solid var(--a-border);
-  background:var(--a-input);
-  border-radius:10px;
-  padding:0.5rem;
-  cursor:pointer;
-}
-.collection-product-item input{accent-color:var(--a-green);}
-.collection-product-item img,
-.collection-product-fallback{
-  width:38px;
-  height:38px;
-  border-radius:8px;
-  object-fit:cover;
-  object-position:center;
-  flex-shrink:0;
-}
-.collection-product-fallback{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border:1px solid var(--a-border);
-}
-.collection-product-item strong{display:block;font-size:0.82rem;color:var(--a-white);line-height:1.25;}
-.collection-product-item small{display:block;font-size:0.73rem;color:var(--a-muted);}
-.collection-product-item.is-hidden{display:none;}
-</style>
-
-<script>
-(function(){
-  var input = document.getElementById('collectionProductSearch');
-  if(!input) return;
-  var items = Array.from(document.querySelectorAll('.collection-product-item'));
-  input.addEventListener('input', function(){
-    var q = (input.value || '').trim().toLowerCase();
-    items.forEach(function(item){
-      var hay = item.getAttribute('data-search') || '';
-      var ok = !q || hay.indexOf(q) !== -1;
-      item.classList.toggle('is-hidden', !ok);
-    });
-  });
-})();
-</script>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/collection-form.js') }}"></script>
 {% endblock %}

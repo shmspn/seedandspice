@@ -5,4 +5,5 @@ __pycache__/
 tests/__pycache__/
 .env
 *.db
-static/
+app/static/img/banners/
+app/static/img/products/

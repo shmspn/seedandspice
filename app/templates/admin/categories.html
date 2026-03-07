@@ -12,30 +12,28 @@
       <tbody>
         {% for c in categories %}
         <tr>
-          <td style="font-size:1.5rem;">{{ c.icon }}</td>
+          <td class="admin-icon-cell">{{ c.icon }}</td>
           <td><strong>{{ c.name }}</strong></td>
           <td>
             {% set looks_like_type = (c.is_type or (c.child_count and c.child_count > 0)) %}
-            <span style="font-size:0.75rem;background:rgba(91,161,85,0.15);color:var(--a-green);padding:0.15rem 0.5rem;border-radius:6px;">
+            <span class="admin-soft-badge">
               {% if looks_like_type %}Categoriy{% else %}Subcategory{% endif %}
             </span>
           </td>
-          <!-- <td><span style="font-size:0.75rem;background:rgba(91,161,85,0.15);color:var(--a-green);padding:0.15rem 0.5rem;border-radius:6px;">{{ c.type }}</span></td> -->
-          <td style="color:var(--a-muted);font-size:0.85rem;">{{ c.parent_name or '—' }}</td>
-          <!-- <td style="color:var(--a-muted);font-size:0.82rem;max-width:200px;">{{ c.description or '—' }}</td> -->
+          <td class="admin-table-muted">{{ c.parent_name or '—' }}</td>
           <td>{{ c.prod_count }} ta</td>
-          <td style="color:var(--a-muted);">{{ c.sort_order }}</td>
+          <td class="admin-table-muted">{{ c.sort_order }}</td>
           <td>
-            <div style="display:flex; gap:10px">
+            <div class="table-actions">
               <a href="{{ url_for('admin.edit_category', id=c.id) }}" class="btn btn-outline btn-sm">Tahrirlash</a>
-              <form method="POST" action="{{ url_for('admin.delete_category', id=c.id) }}" onsubmit="return confirm('O\'chirasizmi?')">
+              <form method="POST" action="{{ url_for('admin.delete_category', id=c.id) }}" data-confirm="O'chirasizmi?">
                 <button type="submit" class="btn btn-red btn-sm">O'chirish</button>
               </form>
             </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--a-muted);">Kategoriya yo'q</td></tr>
+        <tr><td colspan="8" class="admin-empty-row">Kategoriya yo'q</td></tr>
         {% endfor %}
       </tbody>
     </table>

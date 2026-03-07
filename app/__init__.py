@@ -1,4 +1,5 @@
-import sqlite3, os
+import os
+import sqlite3
 from datetime import datetime
 from flask import Flask, g, session
 
@@ -16,7 +17,9 @@ CONTACT_SETTINGS_DEFAULTS = {
 
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(DATABASE, detect_types=sqlite3.PARSE_DECLTYPES)
+        database_path = os.getenv('HERB_DB_PATH', DATABASE)
+        os.makedirs(os.path.dirname(os.path.abspath(database_path)), exist_ok=True)
+        g.db = sqlite3.connect(database_path, detect_types=sqlite3.PARSE_DECLTYPES)
         g.db.row_factory = sqlite3.Row
         g.db.execute('PRAGMA foreign_keys = ON')
     return g.db
@@ -292,9 +295,15 @@ def init_db(app):
 
 def create_app():
     app = Flask(__name__)
-    app.secret_key = 'herbmarket-secret-2024'
-    app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'img', 'products')
-    app.config['BANNER_UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'img', 'banners')
+    app.secret_key = os.getenv('SECRET_KEY', 'herbmarket-secret-2024')
+    app.config['UPLOAD_FOLDER'] = os.getenv(
+        'UPLOAD_FOLDER',
+        os.path.join(os.path.dirname(__file__), 'static', 'img', 'products'),
+    )
+    app.config['BANNER_UPLOAD_FOLDER'] = os.getenv(
+        'BANNER_UPLOAD_FOLDER',
+        os.path.join(os.path.dirname(__file__), 'static', 'img', 'banners'),
+    )
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['BANNER_UPLOAD_FOLDER'], exist_ok=True)
