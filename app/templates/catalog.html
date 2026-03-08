@@ -118,7 +118,6 @@
 
         {% if active_category %}
         <div class="catalog-back-wrap mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
-          <span class="catalog-back-text">{{ active_category['name'] }}</span>
           <a href="{{ url_for('main.catalog', tur=active_type['slug'] if active_type else None, collection=collection, q=search, sort=sort) }}" class="catalog-back-link">
             <span class="catalog-back-link-arrow" aria-hidden="true">←</span>
             <span>{{ active_category['name'] }}</span>
@@ -126,7 +125,6 @@
         </div>
         {% elif active_type and not active_category %}
         <div class="catalog-back-wrap mobile-controls{% if focus_mode_mobile %} show-mobile{% endif %}">
-          <span class="catalog-back-text">Barcha {{ active_type['name']|lower }}</span>
           <a href="{{ url_for('main.catalog', tur=active_type['slug'], collection=collection, q=search, sort=sort) }}" class="catalog-back-link">
             <span class="catalog-back-link-arrow" aria-hidden="true">←</span>
             <span>Barcha {{ active_type['name']|lower }}</span>

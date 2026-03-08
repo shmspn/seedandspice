@@ -3,6 +3,13 @@ from app import get_db
 
 main = Blueprint('main', __name__)
 
+def _date_window_predicate(alias=''):
+    prefix = f'{alias}.' if alias else ''
+    return (
+        f'({prefix}start_date IS NULL OR {prefix}start_date="" OR date({prefix}start_date) <= date("now")) '
+        f'AND ({prefix}end_date IS NULL OR {prefix}end_date="" OR date({prefix}end_date) >= date("now"))'
+    )
+
 def get_product_with_variants(db, product_id):
     p = db.execute('SELECT p.*, c.name as cat_name, c.icon as cat_icon FROM product p LEFT JOIN category c ON c.id=p.category_id WHERE p.id=?', (product_id,)).fetchone()
     if not p: return None, []
@@ -15,7 +22,10 @@ def index():
     banners = db.execute(
         'SELECT b.*, c.slug as collection_slug FROM banners b '
         'LEFT JOIN collections c ON c.id=b.collection_id '
-        'WHERE b.is_active=1 ORDER BY b.sort_order, b.id DESC'
+        'WHERE b.is_active=1 '
+        f'AND {_date_window_predicate("b")} '
+        'AND (b.collection_id IS NULL OR (c.id IS NOT NULL AND c.is_active=1)) '
+        'ORDER BY b.sort_order, b.id DESC'
     ).fetchall()
 
     featured = db.execute(
@@ -133,9 +143,7 @@ def catalog():
 
     if collection_slug:
         active_collection = db.execute(
-            'SELECT * FROM collections WHERE slug=? AND is_active=1 '
-            'AND (start_date IS NULL OR start_date="" OR date(start_date) <= date("now")) '
-            'AND (end_date IS NULL OR end_date="" OR date(end_date) >= date("now"))',
+            'SELECT * FROM collections WHERE slug=? AND is_active=1',
             (collection_slug,)
         ).fetchone()
         if active_collection:

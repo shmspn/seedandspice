@@ -21,14 +21,6 @@
           <input type="text" name="slug" value="{{ collection.slug if collection else '' }}" placeholder="sezoniy-uruglar">
         </div>
         <div class="form-group">
-          <label>Boshlanish sanasi</label>
-          <input type="date" name="start_date" value="{{ collection.start_date if collection and collection.start_date else '' }}">
-        </div>
-        <div class="form-group">
-          <label>Tugash sanasi</label>
-          <input type="date" name="end_date" value="{{ collection.end_date if collection and collection.end_date else '' }}">
-        </div>
-        <div class="form-group">
           <label>Tartib raqami</label>
           <input type="number" name="sort_order" value="{{ collection.sort_order if collection else 0 }}" placeholder="0">
         </div>

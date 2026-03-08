@@ -677,8 +677,6 @@ def add_collection():
         name = request.form.get('name', '').strip()
         slug_input = request.form.get('slug', '').strip()
         description = request.form.get('description', '').strip()
-        start_date = request.form.get('start_date', '').strip() or None
-        end_date = request.form.get('end_date', '').strip() or None
         sort_order = si(request.form.get('sort_order')) or 0
         is_active = 1 if 'is_active' in request.form else 0
         selected_product_ids = [int(x) for x in request.form.getlist('product_ids') if x]
@@ -696,9 +694,9 @@ def add_collection():
         base_slug = slugify(slug_input or name) or f'collection-{uuid.uuid4().hex[:6]}'
         slug = _unique_collection_slug(db, base_slug)
         cur = db.execute(
-            'INSERT INTO collections (name,slug,description,start_date,end_date,sort_order,is_active) '
-            'VALUES (?,?,?,?,?,?,?)',
-            (name, slug, description, start_date, end_date, sort_order, is_active)
+            'INSERT INTO collections (name,slug,description,sort_order,is_active) '
+            'VALUES (?,?,?,?,?)',
+            (name, slug, description, sort_order, is_active)
         )
         cid = cur.lastrowid
         _save_collection_products(db, cid, selected_product_ids)
@@ -733,8 +731,6 @@ def edit_collection(cid):
         name = request.form.get('name', '').strip()
         slug_input = request.form.get('slug', '').strip()
         description = request.form.get('description', '').strip()
-        start_date = request.form.get('start_date', '').strip() or None
-        end_date = request.form.get('end_date', '').strip() or None
         sort_order = si(request.form.get('sort_order')) or 0
         is_active = 1 if 'is_active' in request.form else 0
         selected_product_ids = [int(x) for x in request.form.getlist('product_ids') if x]
@@ -753,9 +749,9 @@ def edit_collection(cid):
         slug = _unique_collection_slug(db, base_slug, exclude_id=cid)
 
         db.execute(
-            'UPDATE collections SET name=?,slug=?,description=?,start_date=?,end_date=?,sort_order=?,is_active=? '
+            'UPDATE collections SET name=?,slug=?,description=?,sort_order=?,is_active=? '
             'WHERE id=?',
-            (name, slug, description, start_date, end_date, sort_order, is_active, cid)
+            (name, slug, description, sort_order, is_active, cid)
         )
         _save_collection_products(db, cid, selected_product_ids)
         db.commit()
@@ -813,11 +809,16 @@ def add_banner():
         subtitle = request.form.get('subtitle', '').strip()
         collection_id = si(request.form.get('collection_id'))
         button_link_manual = request.form.get('button_link', '').strip()
+        start_date = request.form.get('start_date', '').strip() or None
+        end_date = request.form.get('end_date', '').strip() or None
         sort_order = si(request.form.get('sort_order')) or 0
         is_active = 1 if 'is_active' in request.form else 0
 
         if not title:
             flash('Banner sarlavhasi majburiy', 'error')
+            return render_template('admin/banner_form.html', banner=None, collections=available_collections)
+        if start_date and end_date and start_date > end_date:
+            flash("Banner tugash sanasi boshlanish sanasidan oldin bo'lmasin", 'error')
             return render_template('admin/banner_form.html', banner=None, collections=available_collections)
 
         resolved_collection_id = collection_id if collection_id and collection_id > 0 else None
@@ -839,9 +840,9 @@ def add_banner():
             return render_template('admin/banner_form.html', banner=None, collections=available_collections)
 
         db.execute(
-            'INSERT INTO banners (title, subtitle, image_path, collection_id, button_link, sort_order, is_active) '
-            'VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (title, subtitle, image_path, resolved_collection_id, button_link, sort_order, is_active)
+            'INSERT INTO banners (title, subtitle, image_path, collection_id, button_link, start_date, end_date, sort_order, is_active) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (title, subtitle, image_path, resolved_collection_id, button_link, start_date, end_date, sort_order, is_active)
         )
         db.commit()
         flash("Banner qo'shildi!", 'success')
@@ -865,11 +866,16 @@ def edit_banner(bid):
         subtitle = request.form.get('subtitle', '').strip()
         collection_id = si(request.form.get('collection_id'))
         button_link_manual = request.form.get('button_link', '').strip()
+        start_date = request.form.get('start_date', '').strip() or None
+        end_date = request.form.get('end_date', '').strip() or None
         sort_order = si(request.form.get('sort_order')) or 0
         is_active = 1 if 'is_active' in request.form else 0
 
         if not title:
             flash('Banner sarlavhasi majburiy', 'error')
+            return render_template('admin/banner_form.html', banner=banner, collections=available_collections)
+        if start_date and end_date and start_date > end_date:
+            flash("Banner tugash sanasi boshlanish sanasidan oldin bo'lmasin", 'error')
             return render_template('admin/banner_form.html', banner=banner, collections=available_collections)
 
         resolved_collection_id = collection_id if collection_id and collection_id > 0 else None
@@ -889,9 +895,9 @@ def edit_banner(bid):
         image_path = new_image or banner['image_path']
 
         db.execute(
-            'UPDATE banners SET title=?, subtitle=?, image_path=?, collection_id=?, button_link=?, sort_order=?, is_active=? '
+            'UPDATE banners SET title=?, subtitle=?, image_path=?, collection_id=?, button_link=?, start_date=?, end_date=?, sort_order=?, is_active=? '
             'WHERE id=?',
-            (title, subtitle, image_path, resolved_collection_id, button_link, sort_order, is_active, bid)
+            (title, subtitle, image_path, resolved_collection_id, button_link, start_date, end_date, sort_order, is_active, bid)
         )
         db.commit()
 

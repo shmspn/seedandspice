@@ -130,6 +130,8 @@ def init_db(app):
                 collection_id INTEGER,
                 button_text TEXT,
                 button_link TEXT,
+                start_date TEXT,
+                end_date TEXT,
                 sort_order INTEGER DEFAULT 0,
                 is_active INTEGER DEFAULT 1,
                 created_at TEXT DEFAULT (datetime('now')),
@@ -255,6 +257,10 @@ def init_db(app):
                 db.execute('ALTER TABLE banners ADD COLUMN button_text TEXT')
             if 'button_link' not in banner_cols:
                 db.execute('ALTER TABLE banners ADD COLUMN button_link TEXT')
+            if 'start_date' not in banner_cols:
+                db.execute('ALTER TABLE banners ADD COLUMN start_date TEXT')
+            if 'end_date' not in banner_cols:
+                db.execute('ALTER TABLE banners ADD COLUMN end_date TEXT')
             if 'sort_order' not in banner_cols:
                 db.execute('ALTER TABLE banners ADD COLUMN sort_order INTEGER DEFAULT 0')
             if 'is_active' not in banner_cols:
@@ -274,6 +280,13 @@ def init_db(app):
                 db.execute('ALTER TABLE collections ADD COLUMN sort_order INTEGER DEFAULT 0')
             if 'is_active' not in collection_cols:
                 db.execute('ALTER TABLE collections ADD COLUMN is_active INTEGER DEFAULT 1')
+
+        db.execute(
+            'UPDATE banners SET '
+            'start_date=COALESCE(NULLIF(start_date, ""), (SELECT c.start_date FROM collections c WHERE c.id=banners.collection_id)), '
+            'end_date=COALESCE(NULLIF(end_date, ""), (SELECT c.end_date FROM collections c WHERE c.id=banners.collection_id)) '
+            'WHERE collection_id IS NOT NULL'
+        )
 
         # Fill new variant fields from product-level values for existing records
         db.execute(

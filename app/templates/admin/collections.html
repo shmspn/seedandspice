@@ -12,7 +12,6 @@
         <tr>
           <th>Nomi</th>
           <th>Link</th>
-          <th>Davr</th>
           <th>Mahsulot</th>
           <th>Status</th>
           <th>Amallar</th>
@@ -30,13 +29,6 @@
                     data-link="{{ url_for('main.catalog', collection=c.slug) }}">
               /katalog?collection={{ c.slug }}
             </button>
-          </td>
-          <td class="admin-table-small admin-table-muted">
-            {% if c.start_date or c.end_date %}
-              {{ c.start_date or '…' }} — {{ c.end_date or '…' }}
-            {% else %}
-              Cheklanmagan
-            {% endif %}
           </td>
           <td>{{ c.prod_count }} ta</td>
           <td>
@@ -56,7 +48,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="admin-empty-row">Kolleksiyalar yo'q</td></tr>
+        <tr><td colspan="5" class="admin-empty-row">Kolleksiyalar yo'q</td></tr>
         {% endfor %}
       </tbody>
     </table>

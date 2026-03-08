@@ -13,6 +13,7 @@
           <th>Rasm</th>
           <th>Sarlavha</th>
           <th>Yo'nalish</th>
+          <th>Davr</th>
           <th>Tartib</th>
           <th>Status</th>
           <th>Amallar</th>
@@ -41,6 +42,13 @@
               <span>—</span>
             {% endif %}
           </td>
+          <td class="admin-table-small admin-table-muted">
+            {% if b.start_date or b.end_date %}
+              {{ b.start_date or '…' }} — {{ b.end_date or '…' }}
+            {% else %}
+              Cheklanmagan
+            {% endif %}
+          </td>
           <td>{{ b.sort_order }}</td>
           <td>
             {% if b.is_active %}
@@ -59,7 +67,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="admin-empty-row">Bannerlar yo'q</td></tr>
+        <tr><td colspan="7" class="admin-empty-row">Bannerlar yo'q</td></tr>
         {% endfor %}
       </tbody>
     </table>

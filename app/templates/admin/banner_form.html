@@ -32,6 +32,14 @@
           <input type="text" id="manualLinkInput" name="button_link" value="{{ banner.button_link if banner else '' }}" placeholder="/katalog yoki https://...">
         </div>
         <div class="form-group">
+          <label>Boshlanish sanasi</label>
+          <input type="date" name="start_date" value="{{ banner.start_date if banner and banner.start_date else '' }}">
+        </div>
+        <div class="form-group">
+          <label>Tugash sanasi</label>
+          <input type="date" name="end_date" value="{{ banner.end_date if banner and banner.end_date else '' }}">
+        </div>
+        <div class="form-group">
           <label>Tartib raqami</label>
           <input type="number" name="sort_order" value="{{ banner.sort_order if banner else 0 }}" placeholder="0">
         </div>
