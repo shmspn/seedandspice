@@ -147,7 +147,7 @@ button {
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.4rem;
   flex-shrink: 0;
 }
 
