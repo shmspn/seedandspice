@@ -597,8 +597,8 @@ button {
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
-  width: 42px;
-  height: 42px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.7);
   background: rgba(255, 255, 255, 0.94);
@@ -629,8 +629,8 @@ button {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.92);
@@ -2106,16 +2106,10 @@ button {
   #favoritesPage .products-grid,
   #productPage .products-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.2rem;
+    gap: 1rem;
   }
 
   .catalog-layout {
-    grid-template-columns: 210px 1fr;
-    gap: 1.25rem;
-  }
-
-  .catalog-layout-tree {
-    grid-template-columns: 250px 1fr;
     gap: 1rem;
   }
 
@@ -2493,6 +2487,11 @@ button {
   .home-banner-subtitle {
     font-size: 0.78rem;
     max-width: 100%;
+  }
+
+  .pcard-favorite{
+    top: 1rem;
+    right: 1rem;
   }
 
   .features-bar {
