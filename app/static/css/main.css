@@ -147,17 +147,17 @@ button {
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
   flex-shrink: 0;
 }
 
 .logo-mark {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 10px;
   color: var(--green2);
   background:
     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 42%),
@@ -167,8 +167,8 @@ button {
 }
 
 .logo-mark svg {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
 }
 
 .logo-text {
@@ -2183,10 +2183,14 @@ button {
     font-size: 1.2rem;
   }
 
+  .logo{
+    gap: 0.2rem;
+  }
+
   .logo-mark {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
   }
 
   .logo-mark svg {
