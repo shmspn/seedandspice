@@ -422,23 +422,18 @@ button {
 .pcard {
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 30px;
+  border-radius: 20px;
   overflow: hidden;
   transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 0.8rem;
   backdrop-filter: blur(12px);
   box-shadow: 0 18px 40px rgba(18, 36, 23, 0.07);
 }
 
-.pcard:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 26px 50px rgba(18, 36, 23, 0.12);
-  border-color: rgba(102, 214, 62, 0.28);
-}
 
 .pcard-img {
   background: linear-gradient(180deg, #f6faf5 0%, #edf2ec 100%);
@@ -448,9 +443,59 @@ button {
   font-size: 5rem;
   position: relative;
   overflow: hidden;
-  height: clamp(200px, 18vw, 248px);
-  border-radius: 22px;
+  width: 100%;
+  aspect-ratio: 1.2 / 1;
+  border-radius: 15px;
   margin-bottom: 1rem;
+}
+
+.pcard-media {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
+}
+
+.pcard-media .pcard-img {
+  margin-bottom: 0;
+}
+
+.pcard-img.has-gallery {
+  padding: 0;
+}
+
+.pcard-gallery-track {
+  width: 100%;
+  height: 100%;
+}
+
+.pcard-gallery-slide {
+  width: 100%;
+  height: 100%;
+}
+
+.pcard-img.has-gallery .pcard-gallery-slide + .pcard-gallery-slide {
+  display: none;
+}
+
+.pcard-gallery-dots {
+  display: none;
+  justify-content: center;
+  gap: 0.2rem;
+  margin-top: -3px;
+  margin-bottom: 2px;
+}
+
+.pcard-gallery-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(76, 109, 88, 0.28);
+  transition: transform 0.18s, background 0.18s;
+}
+
+.pcard-gallery-dot.active {
+  background: var(--green2);
+  transform: scale(1.15);
 }
 
 .pcard-img img {
@@ -461,9 +506,6 @@ button {
   transition: transform 0.25s;
 }
 
-.pcard:hover .pcard-img img {
-  transform: scale(1.08);
-}
 
 .pcard-badge {
   position: absolute;
@@ -493,8 +535,8 @@ button {
 
 .pcard-name {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.08rem;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--brown);
   margin-bottom: 0.35rem;
   line-height: 1.3;
@@ -514,14 +556,14 @@ button {
 
 .pcard-bottom {
   padding: 0;
-  margin-top: 1rem;
+  margin-top: 0.55rem;
 }
 
 .pcard-variants {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-top: 0.9rem;
+  margin-top: 0.5rem;
 }
 
 .pcard-vbtn {
@@ -562,7 +604,7 @@ button {
 }
 
 .pcard-price {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--green2);
 }
@@ -595,23 +637,23 @@ button {
 
 .pcard-favorite {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  width: 35px;
-  height: 35px;
+  top: 1.2rem;
+  right: 1.2rem;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.94);
+  border: none;
+  background: rgba(255, 255, 255, 0.8);
   color: var(--terracot);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.05rem;
-  line-height: 1;
+  /* line-height: 1; */
   cursor: pointer;
   z-index: 4;
   box-shadow: 0 12px 24px rgba(18, 36, 23, 0.1);
-  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  /* transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s; */
 }
 
 .pcard-favorite:hover {
@@ -627,13 +669,13 @@ button {
 
 .product-favorite-btn {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 40px;
-  height: 40px;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  background: rgba(255, 255, 255, 0.8);
   color: var(--terracot);
   display: flex;
   align-items: center;
@@ -1030,15 +1072,11 @@ button {
 
 .catalog-back-link {
   display: none;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.65rem 1rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
   color: var(--brown);
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  background: var(--white);
+  position: absolute;
+  top: 10px;
 }
 
 .catalog-back-link:hover {
@@ -1111,7 +1149,7 @@ button {
 }
 
 .catalog-sort-select {
-  padding: 0.88rem 1.15rem;
+  padding: 0.88rem 1rem;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface-soft);
@@ -2070,6 +2108,31 @@ button {
     height: 300px;
   }
 
+  .pcard-img.has-gallery .pcard-gallery-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .pcard-img.has-gallery .pcard-gallery-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pcard-img.has-gallery .pcard-gallery-slide,
+  .pcard-img.has-gallery .pcard-gallery-slide + .pcard-gallery-slide {
+    display: flex;
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .pcard-media .pcard-gallery-dots {
+    display: flex;
+  }
+
   #homePage .products-grid,
   #productPage .products-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2257,6 +2320,7 @@ button {
 
   .mobile-controls.show-mobile {
     display: block;
+    margin-right: 5px;
   }
 
   .catalog-back-link {
@@ -2358,12 +2422,18 @@ button {
     border-radius: 24px;
   }
 
-  .catalog-toolbar-copy {
-    width: 100%;
+  .catalog-sort-select{
+    padding: 0.7rem;
+    font-size: 0.8rem;
+    border-radius: 14px;
   }
 
   .catalog-page-title {
-    font-size: 1.35rem;
+    font-size: 1.1rem;
+  }
+
+  .catalog-page-meta {
+    font-size: 0.7rem;
   }
 
   .product-layout {
@@ -2446,21 +2516,20 @@ button {
     padding: 0 1rem 1rem;
   }
 
-  .pcard-img {
-    height: 154px;
+  .pcard-name {
+    font-size: 0.8rem;
   }
 
-  .pcard-name {
-    font-size: 0.94rem;
+  .pcard-bottom{
+    margin-top: 0.5rem;
   }
 
   .pcard {
-    padding: 0.7rem;
-    border-radius: 24px;
+    padding: 0.6rem;
   }
 
   .pcard-price {
-    font-size: 1.08rem;
+    font-size: 1rem;
   }
 
   .section {
@@ -2494,8 +2563,8 @@ button {
   }
 
   .pcard-favorite{
-    top: 1rem;
-    right: 1rem;
+    top: 0.9rem;
+    right: 0.9rem;
   }
 
   .features-bar {

@@ -16,6 +16,26 @@ def get_product_with_variants(db, product_id):
     variants = db.execute('SELECT * FROM product_variants WHERE product_id=? ORDER BY id', (product_id,)).fetchall()
     return p, variants
 
+def _get_product_card_images(db, product_id, fallback=None):
+    rows = db.execute(
+        'SELECT image_path FROM product_images WHERE product_id=? '
+        'ORDER BY is_primary DESC, order_index, id',
+        (product_id,)
+    ).fetchall()
+    images = []
+    seen = set()
+    for row in rows:
+        image_path = (row['image_path'] or '').strip()
+        if not image_path or image_path in seen:
+            continue
+        seen.add(image_path)
+        images.append(image_path)
+
+    fallback_image = (fallback or '').strip() if isinstance(fallback, str) else ''
+    if not images and fallback_image:
+        images.append(fallback_image)
+    return images
+
 @main.route('/')
 def index():
     db = get_db()
@@ -37,11 +57,10 @@ def index():
     featured_with_variants = []
     for p in featured:
         variants = db.execute('SELECT * FROM product_variants WHERE product_id=? ORDER BY id', (p['id'],)).fetchall()
-        # Get primary image
-        primary_img = db.execute('SELECT image_path FROM product_images WHERE product_id=? ORDER BY is_primary DESC, order_index, id LIMIT 1', (p['id'],)).fetchone()
         row = dict(p)
         row['variants'] = [dict(v) for v in variants]
-        row['primary_image'] = primary_img['image_path'] if primary_img else row['image']
+        row['card_images'] = _get_product_card_images(db, p['id'], row.get('image'))
+        row['primary_image'] = row['card_images'][0] if row['card_images'] else row['image']
         featured_with_variants.append(row)
 
     new_arrivals = db.execute(
@@ -195,11 +214,10 @@ def catalog():
     prod_list = []
     for p in products:
         variants = db.execute('SELECT * FROM product_variants WHERE product_id=? ORDER BY id', (p['id'],)).fetchall()
-        # Get primary image
-        primary_img = db.execute('SELECT image_path FROM product_images WHERE product_id=? ORDER BY is_primary DESC, order_index, id LIMIT 1', (p['id'],)).fetchone()
         row = dict(p)
         row['variants'] = [dict(v) for v in variants]
-        row['primary_image'] = primary_img['image_path'] if primary_img else row['image']
+        row['card_images'] = _get_product_card_images(db, p['id'], row.get('image'))
+        row['primary_image'] = row['card_images'][0] if row['card_images'] else row['image']
         prod_list.append(row)
 
     total_pages = (total+per_page-1)//per_page
@@ -278,7 +296,8 @@ def product_detail(slug):
     related = []
     for p in related_rows:
         row = dict(p)
-        row['primary_image'] = _get_primary_image(db, p['id'], p['image'])
+        row['card_images'] = _get_product_card_images(db, p['id'], row.get('image'))
+        row['primary_image'] = row['card_images'][0] if row['card_images'] else row['image']
         rel_variants = db.execute(
             'SELECT * FROM product_variants WHERE product_id=? ORDER BY id',
             (p['id'],)
@@ -319,7 +338,8 @@ def _popular_products_for_favorites(db, exclude_ids=None, limit=6):
     result = []
     for p in rows:
         row = dict(p)
-        row['primary_image'] = _get_primary_image(db, p['id'], p['image'])
+        row['card_images'] = _get_product_card_images(db, p['id'], row.get('image'))
+        row['primary_image'] = row['card_images'][0] if row['card_images'] else row['image']
         variants = db.execute(
             'SELECT * FROM product_variants WHERE product_id=? ORDER BY id',
             (p['id'],)
@@ -439,6 +459,7 @@ def favorites():
             (pid,)
         ).fetchall()
         item['variants'] = [dict(v) for v in variants]
+        item['card_images'] = _get_product_card_images(db, pid, item.get('image'))
         selected_variant_id = None
         selected_label = (item.get('variant') or '').strip().lower()
         if selected_label and item['variants']:

@@ -1,0 +1,27 @@
+{% macro render_product_card_media(images, fallback_image, name, fallback_icon='🌿') -%}
+  {% set image_list = images or [] %}
+  {% if image_list|length > 1 %}
+  <div class="pcard-media" data-pcard-gallery>
+    <div class="pcard-img has-gallery">
+      <div class="pcard-gallery-track" data-pcard-track>
+        {% for image in image_list %}
+        <div class="pcard-gallery-slide">
+          <img src="{{ url_for('static', filename='img/products/' + image) }}" alt="{{ name }}">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="pcard-gallery-dots" data-pcard-dots aria-hidden="true">
+      {% for _ in image_list %}
+      <span class="pcard-gallery-dot{% if loop.first %} active{% endif %}"></span>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif image_list or fallback_image %}
+  <div class="pcard-img">
+    <img src="{{ url_for('static', filename='img/products/' + ((image_list[0] if image_list else fallback_image))) }}" alt="{{ name }}">
+  </div>
+  {% else %}
+  <div class="pcard-img">{{ fallback_icon }}</div>
+  {% endif %}
+{%- endmacro %}

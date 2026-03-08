@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'partials/product_card_media.html' import render_product_card_media %}
 {% block title %}NaturMart — Tabiiy Ziravorlar, Dorivorlar va Urug'lar{% endblock %}
 {% block content %}
 <div id="homePage"
@@ -52,11 +53,7 @@
     {% set initial_key = (p['id'] ~ '') %}
     <div class="pcard reveal">
       <a href="{{ url_for('main.product_detail', slug=p['slug']) }}" class="pcard-link">
-        <div class="pcard-img">
-          {% if p.get('primary_image') or p['image'] %}
-          <img src="{{ url_for('static', filename='img/products/'+(p.get('primary_image') or p['image'])) }}" alt="{{ p['name'] }}">
-          {% else %}{{ p['cat_icon'] or '🌿' }}{% endif %}
-        </div>
+        {{ render_product_card_media(p.get('card_images', []), p.get('primary_image') or p['image'], p['name'], p['cat_icon'] or '🌿') }}
         <div class="pcard-body">
           <div class="pcard-name">{{ p['name'] }}</div>
         </div>
